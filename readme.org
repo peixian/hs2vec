@@ -1,0 +1,7 @@
+* Maps Hearthstone cards to vectors for easy comparison
+** References: 
+*** [[https://radimrehurek.com/gensim/models/word2vec.html][word2vec]]
+*** [[http://www.clips.ua.ac.be/pages/pattern-web][web patterns]]
+*** [[https://github.com/overlap-ai/words2map][word2map]]
+*** [[https://github.com/billzorn/mtgencode][mtgencode]]
+*** [[https://github.com/PAK90/cardcrunch][CardCrunch]]

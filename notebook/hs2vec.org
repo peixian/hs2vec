@@ -1,0 +1,38 @@
+#+BEGIN_SRC ipython :session
+  from __future__ import division
+  import numpy as np
+  from gensim.models import Word2Vec
+  from sklearn.manifold import TSNE
+  from hdbscan import HDBSCAN
+  from nltk import tokenize, bigrams, trigrams, everygrams, FreqDist, corpus
+  import matplotlib; matplotlib.use('Agg')
+  import matplotlib.pyplot as plt
+  import seaborn as sns
+  import semidbm
+  from operator import itemgetter
+  from itertools import combinations
+  from unidecode import unidecode
+  from multiprocessing import process, managers
+  import requests
+#+END_SRC
+
+#+RESULTS:
+
+
+#+BEGIN_SRC ipython :session :results output
+  r = requests.get('https://api.hearthstonejson.com/v1/10357/enUS/cards.json')
+  cards = r.json()
+  print(cards[0])
+  print(len(cards))
+#+END_SRC
+
+#+RESULTS:
+: {'id': 'TU4e_005', 'set': 'MISSIONS', 'name': 'Flame Burst', 'rarity': 'COMMON', 'text': 'Shoot 5 missiles at random enemies for $1 damage each.', 'type': 'SPELL', 'cost': 3}
+: 1607
+
+#+BEGIN_SRC ipython :session :results output
+  
+#+END_SRC
+
+#+RESULTS:
+
