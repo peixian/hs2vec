@@ -14,24 +14,68 @@
   from unidecode import unidecode
   from multiprocessing import process, managers
   import requests
+  import json
+  import re
 #+END_SRC
 
 #+RESULTS:
 
 
 #+BEGIN_SRC ipython :session :results output
-  r = requests.get('https://api.hearthstonejson.com/v1/10357/enUS/cards.json')
-  cards = r.json()
-  print(cards[0])
-  print(len(cards))
+  #r = requests.get('https://api.hearthstonejson.com/v1/10357/enUS/cards.json')
+  #cards = r.json()
+  #print(cards[0])
+  #print(len(cards))
 #+END_SRC
 
 #+RESULTS:
-: {'id': 'TU4e_005', 'set': 'MISSIONS', 'name': 'Flame Burst', 'rarity': 'COMMON', 'text': 'Shoot 5 missiles at random enemies for $1 damage each.', 'type': 'SPELL', 'cost': 3}
-: 1607
 
 #+BEGIN_SRC ipython :session :results output
-  
+  class card_text(object):
+      def __init__(self, json_name):
+          self.json_name = json_name
+
+      def __iter__(self):
+          card_list = json.load(open(self.json_name))
+          for card in card_list:
+              if 'text' in card:
+                  yield self.clean_words(card['text'])
+
+      def clean_words(self, text):
+          text = re.sub(r'(\<.\>)|(\<\/*.\>)', '', text)
+          text = re.sub(r'[^(\/)a-zA-z0-9 ]', '', text)
+          words = text.split()
+          return [word.lower() for word in words if word not in corpus.stopwords.words('english')]
+#+END_SRC
+
+#+RESULTS:
+
+
+#+BEGIN_SRC ipython :session :results output
+  data = card_text('../data/cards.json')
+  gen = data.__iter__()
+  print(next(gen))
+  print(next(gen))
+#+END_SRC
+
+#+RESULTS:
+: ['shoot', '5', 'missiles', 'random', 'enemies', '1', 'damage']
+: ['restore', '5', 'health', 'character']
+
+#+BEGIN_SRC ipython :session
+  model = Word2Vec(data)
+#+END_SRC
+
+#+RESULTS:
+
+#+BEGIN_SRC ipython :session
+  print(model.vocab)
+#+END_SRC
+
+#+RESULTS:
+
+#+BEGIN_SRC ipython :session
+  print(model.most_similar(positive = ['random']))
 #+END_SRC
 
 #+RESULTS:
