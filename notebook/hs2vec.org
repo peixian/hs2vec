@@ -25,7 +25,7 @@
   #r = requests.get('https://api.hearthstonejson.com/v1/10357/enUS/cards.json')
   #cards = r.json()
   #print(cards[0])
-  #print(len(cards))
+  #print(len(cards))x
 #+END_SRC
 
 #+RESULTS:
@@ -76,6 +76,12 @@
 
 #+BEGIN_SRC ipython :session
   print(model.most_similar(positive = ['random']))
+#+END_SRC
+
+#+RESULTS:
+
+#+BEGIN_SRC ipython :session
+  model.save('./model.bin')
 #+END_SRC
 
 #+RESULTS:
