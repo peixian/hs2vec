@@ -1,1 +1,0 @@
-../yaha/yaha_analysis/collectobot.py

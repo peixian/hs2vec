@@ -1,5 +1,26 @@
 * Maps Hearthstone cards to vectors for easy comparison
+* Installation:
+If you have the usual tools of the trade for ml (pandas, numpy, etc), this'll be easy. Otherwise strap in.
+
+1. Install [[https://spark.apache.org/downloads.html][spark]] and [[https://stackoverflow.com/questions/28829757/unable-to-add-spark-to-pythonpath][pyspark to your path]].
+2. Install [[https://www.continuum.io/downloads][anaconda]] and create a new virtualenv in python3 with pandas and numpy.
+3. Run the following script:
+#+BEGIN_SRC sh :results output
+  mkdir hearthstone_data
+  cd hearthstone_data
+  git clone https://github.com/peixian/Yet-Another-Hearthstone-Analyzer
+  mv Yet-Another-Hearthstone-Analyzer yaha
+  git clone https://github.com/peixian/hs2vec
+  cd hs2vec
+  mkdir test_data
+#+END_SRC 
+4. Install the requirements with: 
+#+BEGIN_SRC sh :results output
+  pip install -r requirements.txt
+#+END_SRC
+5. Open emacs, switch to the virtualenv you just made in emacs, and you /should/ be able to run the org-babel file. Feel free to open a github issue if it doesn't work.
 ** References: 
+
 *** [[https://radimrehurek.com/gensim/models/word2vec.html][word2vec]]
 *** [[http://www.clips.ua.ac.be/pages/pattern-web][web patterns]]
 *** [[https://github.com/overlap-ai/words2map][word2map]]

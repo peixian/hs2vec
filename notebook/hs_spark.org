@@ -1,0 +1,20 @@
+* Hey! If you're reading this on Github, you should download this file instead. Github doesn't display org-babel files very well.
+
+by Peixian Wang - 2016/8/3
+
+/This is licensed under MIT, so do what you want with it, modify it, fork it, etc. If you use this code I'd apprechiate an attribution back :>/
+
+*MAKE SURE YOU'RE IN THE RIGHT VIRTUALENV*
+#+BEGIN_SRC ipython :session 
+  from .. import collectobot
+#+END_SRC
+
+
+#+BEGIN_SRC ipython :session :results output
+  import pyspark
+  from pyspark.sql import SparkSession
+  context = pyspark.SparkContext(appName = 'hs2vec') #Spark variables are camelcase for whatever reason
+  spark = SparkSession(context)
+#+END_SRC
+
+
