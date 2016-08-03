@@ -78,13 +78,35 @@ Fill the spells with 0 attack and 0 health to normalize (there's probably a bett
 
   min_max_scaler = preprocessing.MinMaxScaler()
   norm = lambda x: min_max_scaler.fit_transform(x)
-  df_t = df[['id', 'attack', 'cost', 'health']]
-  df_t[['attack', 'cost', 'health']] = df_t[['attack', 'cost', 'health']].apply(norm)
+  df_n_stats = df[['id', 'attack', 'cost', 'health']]
+  df_n_stats[['attack', 'cost', 'health']] = df_n_stats[['attack', 'cost', 'health']].apply(norm)
   print(df_t)
 #+END_SRC
 
 #+RESULTS:
 
+coerce the mechanics into binary features with one hot encoding 
+#+BEGIN_SRC ipython :session
+  df_mechanics = df[['id','mechanics']]
+  df_mechanics['mechanics'] = [['NONE'] if isinstance(x, float) else x for x in df_mechanics['mechanics']] #fillna doesn't work because pandas won't let you use a list
+
+  from sklearn.preprocessing import MultiLabelBinarizer
+  from sklearn.preprocessing import OneHotEncoder
+  mlbin = MultiLabelBinarizer()
+  binarized = mlbin.fit_transform(df_mechanics['mechanics']) #transform into a matrix of integers
+  enc = sklearn.preprocessing.OneHotEncoder() #binarize and encode
+  encoded = enc.fit_transform(binarized)
+  print(len(df_mechanics['mechanics']))
+  print(binarized[0])
+  print(mlbin.classes_)
+  #print(df_mechanics)
+  #enc = sklearn.preprocessing.OneHotEncoder()
+  #dummy = pd.get_dummies(df_mechanics['mechanics'])
+  #enc.fit(dummy)
+  #print(enc.feature_indices_)
+#+END_SRC
+
+#+RESULTS:
 
 #+BEGIN_SRC ipython :session :results output
   import findspark
