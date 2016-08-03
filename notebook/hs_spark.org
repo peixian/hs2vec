@@ -68,46 +68,72 @@ Filter out all the weird generated cards:
 #+END_SRC
 
 #+RESULTS:
-
-Fill the spells with 0 attack and 0 health to normalize (there's probably a better way of doing this)
+*** Normalize the cost, attack, and health
 #+BEGIN_SRC ipython :session 
   from sklearn import preprocessing
 
-  df[['attack', 'health']] = df[['attack', 'health']].fillna(0)
-
+  df[['attack', 'health']] = df[['attack', 'health']].fillna(0) #Fill the spells with 0 attack and 0 health to normalize (there's probably a better way of doing this)
 
   min_max_scaler = preprocessing.MinMaxScaler()
   norm = lambda x: min_max_scaler.fit_transform(x)
   df_n_stats = df[['id', 'attack', 'cost', 'health']]
   df_n_stats[['attack', 'cost', 'health']] = df_n_stats[['attack', 'cost', 'health']].apply(norm)
-  print(df_t)
+  print(df_n_stats)
 #+END_SRC
 
 #+RESULTS:
 
-coerce the mechanics into binary features with one hot encoding 
+*** Coerce the mechanics into binary features with one hot encoding
 #+BEGIN_SRC ipython :session
-  df_mechanics = df[['id','mechanics']]
-  df_mechanics['mechanics'] = [['NONE'] if isinstance(x, float) else x for x in df_mechanics['mechanics']] #fillna doesn't work because pandas won't let you use a list
-
+  df_mechanics = df[['id','mechanics', 'overload']] #weirdly overload isn't a listed mechanic
+  for i, row in df_mechanics.iterrows():
+      val = row['mechanics']
+      overload = row['overload']
+      if not isinstance(val, list) and pd.notnull(overload):
+          val = ['OVERLOAD']
+      elif not isinstance(val, list) and pd.isnull(overload):
+          val = ['NONE']
+      elif isinstance(val, list) and pd.notnull(overload) and 'OVERLOAD' not in val:
+          val.append('OVERLOAD')
+      else:
+          val = row['mechanics']
+      #elif pd.notnull(val)
+          #val = val.append('OVERLOAD')
+      df_mechanics.set_value(i, 'mechanics', val)
+  df_mechanics.drop('overload', axis=1, inplace=True)
+  import sklearn
   from sklearn.preprocessing import MultiLabelBinarizer
   from sklearn.preprocessing import OneHotEncoder
   mlbin = MultiLabelBinarizer()
   binarized = mlbin.fit_transform(df_mechanics['mechanics']) #transform into a matrix of integers
   enc = sklearn.preprocessing.OneHotEncoder() #binarize and encode
   encoded = enc.fit_transform(binarized)
-  print(len(df_mechanics['mechanics']))
-  print(binarized[0])
+
+  df_mechanics['mechanics_binarized'] = binarized.tolist()
+  df_mechanics['sparse'] = encoded
   print(mlbin.classes_)
+  #print(len(df_mechanics['mechanics']))
+  #print(binarized[0])
   #print(df_mechanics)
-  #enc = sklearn.preprocessing.OneHotEncoder()
-  #dummy = pd.get_dummies(df_mechanics['mechanics'])
-  #enc.fit(dummy)
-  #print(enc.feature_indices_)
+  #print(df_mechanics.dtypes) #[id, mechanics, mechanics_binarized, sparse] -> [string, list, list, scipi csr]
 #+END_SRC
 
 #+RESULTS:
 
+*** Binarize and encode the playerClass 
+#+BEGIN_SRC ipython :session :results output
+
+#+END_SRC
+
+#+RESULTS:
+
+*** Binarize and encode the 
+
+
+
+
+
+* Spark stuff
 #+BEGIN_SRC ipython :session :results output
   import findspark
   findspark.init('/Users/peixianwang/Code/spark-2.0.0')
