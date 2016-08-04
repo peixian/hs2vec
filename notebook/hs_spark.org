@@ -5,7 +5,7 @@ by Peixian Wang - 2016/8/3
 /This is licensed under MIT, so do what you want with it, modify it, fork it, etc. If you use this code I'd apprechiate an attribution back :>/
 
 *MAKE SURE YOU'RE IN THE RIGHT VIRTUALENV*
-
+*** Setup
 Import the supporting cast
 #+BEGIN_SRC ipython :session 
   import collectobot
@@ -61,7 +61,6 @@ Index(['artist', 'attack', 'collectible', 'cost', 'durability', 'dust',
 
 
 Filter out all the weird generated cards:
-
 #+BEGIN_SRC ipython :session :results output
   df = df[df['collectible'] == 1.0]
   df = df[pd.notnull(df['cost'])]
@@ -69,7 +68,7 @@ Filter out all the weird generated cards:
 
 #+RESULTS:
 *** Normalize the cost, attack, and health
-#+BEGIN_SRC ipython :session 
+#+BEGIN_SRC ipython :session :results output
   from sklearn import preprocessing
 
   df[['attack', 'health']] = df[['attack', 'health']].fillna(0) #Fill the spells with 0 attack and 0 health to normalize (there's probably a better way of doing this)
@@ -78,29 +77,40 @@ Filter out all the weird generated cards:
   norm = lambda x: min_max_scaler.fit_transform(x)
   df_n_stats = df[['id', 'attack', 'cost', 'health']]
   df_n_stats[['attack', 'cost', 'health']] = df_n_stats[['attack', 'cost', 'health']].apply(norm)
-  print(df_n_stats)
+  print(df_n_stats.head(5))
 #+END_SRC
 
 #+RESULTS:
+:          id    attack  cost    health
+: 3    OG_121  0.583333  0.28  0.466667
+: 6    OG_085  0.166667  0.16  0.266667
+: 10   AT_076  0.250000  0.16  0.266667
+: 15  CS2_124  0.250000  0.12  0.066667
+: 17  GVG_079  0.583333  0.32  0.466667
 
 *** Coerce the mechanics into binary features with one hot encoding
-#+BEGIN_SRC ipython :session
-  df_mechanics = df[['id','mechanics', 'overload']] #weirdly overload isn't a listed mechanic
+#+BEGIN_SRC ipython :session :results output
+  df_mechanics = df[['id','mechanics', 'overload', 'spellDamage']] #weirdly overload isn't a listed mechanic, check bug: https://github.com/HearthSim/HearthstoneJSON/issues/35
   for i, row in df_mechanics.iterrows():
       val = row['mechanics']
       overload = row['overload']
-      if not isinstance(val, list) and pd.notnull(overload):
-          val = ['OVERLOAD']
-      elif not isinstance(val, list) and pd.isnull(overload):
+      spell_damage = row['spellDamage']
+      #hey look kids let's violate DRY today!
+      if pd.notnull(overload):
+          if isinstance(val, list) and 'OVERLOAD' not in val:
+              val.append('OVERLOAD')
+          elif not isinstance(val, list):
+              val = ['OVERLOAD']
+      if pd.notnull(spell_damage):
+          if isinstance(val, list) and 'SPELL_DAMAGE' not in val:
+              val.append('SPELL_DAMAGE')
+          elif not isinstance(val, list):
+              val = ['SPELL_DAMAGE']
+      if not isinstance(val, list) and pd.isnull(overload) and pd.isnull(spell_damage):
           val = ['NONE']
-      elif isinstance(val, list) and pd.notnull(overload) and 'OVERLOAD' not in val:
-          val.append('OVERLOAD')
-      else:
-          val = row['mechanics']
-      #elif pd.notnull(val)
-          #val = val.append('OVERLOAD')
       df_mechanics.set_value(i, 'mechanics', val)
   df_mechanics.drop('overload', axis=1, inplace=True)
+  df_mechanics.drop('spellDamage', axis=1, inplace=True)
   import sklearn
   from sklearn.preprocessing import MultiLabelBinarizer
   from sklearn.preprocessing import OneHotEncoder
@@ -110,30 +120,177 @@ Filter out all the weird generated cards:
   encoded = enc.fit_transform(binarized)
 
   df_mechanics['mechanics_binarized'] = binarized.tolist()
-  df_mechanics['sparse'] = encoded
+  df_mechanics['mechanics_sparse'] = encoded
   print(mlbin.classes_)
-  #print(len(df_mechanics['mechanics']))
-  #print(binarized[0])
-  #print(df_mechanics)
+  print(df_mechanics.head(5))
   #print(df_mechanics.dtypes) #[id, mechanics, mechanics_binarized, sparse] -> [string, list, list, scipi csr]
 #+END_SRC
 
 #+RESULTS:
+#+begin_example
+['ADJACENT_BUFF' 'AURA' 'BATTLECRY' 'CANT_ATTACK'
+ 'CANT_BE_TARGETED_BY_ABILITIES' 'CANT_BE_TARGETED_BY_HERO_POWERS' 'CHARGE'
+ 'CHOOSE_ONE' 'COMBO' 'DEATHRATTLE' 'DIVINE_SHIELD' 'ENRAGED' 'FORGETFUL'
+ 'FREEZE' 'INSPIRE' 'ImmuneToSpellpower' 'InvisibleDeathrattle' 'NONE'
+ 'OVERLOAD' 'POISONOUS' 'RITUAL' 'SECRET' 'SILENCE' 'SPELL_DAMAGE'
+ 'STEALTH' 'TAUNT' 'TOPDECK' 'WINDFURY']
+         id        mechanics  \
+3    OG_121      [BATTLECRY]   
+6    OG_085           [NONE]   
+10   AT_076        [INSPIRE]   
+15  CS2_124         [CHARGE]   
+17  GVG_079  [DIVINE_SHIELD]   
+
+                                  mechanics_binarized  \
+3   [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...   
+6   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...   
+10  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ...   
+15  [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, ...   
+17  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, ...   
+
+                                     mechanics_sparse  
+3     (0, 54)\t1.0\n  (0, 52)\t1.0\n  (0, 50)\t1.0...  
+6     (0, 54)\t1.0\n  (0, 52)\t1.0\n  (0, 50)\t1.0...  
+10    (0, 54)\t1.0\n  (0, 52)\t1.0\n  (0, 50)\t1.0...  
+15    (0, 54)\t1.0\n  (0, 52)\t1.0\n  (0, 50)\t1.0...  
+17    (0, 54)\t1.0\n  (0, 52)\t1.0\n  (0, 50)\t1.0...  
+#+end_example
 
 *** Binarize and encode the playerClass 
 #+BEGIN_SRC ipython :session :results output
+  df_player_class = df[['id', 'playerClass']]
+  df_player_class['playerClass'].fillna('Neutral', inplace=True)
 
+  from sklearn.preprocessing import LabelBinarizer
+  mlbin = LabelBinarizer()
+  binarized = mlbin.fit_transform(df_player_class['playerClass'])
+  enc = sklearn.preprocessing.OneHotEncoder()
+  encoded = enc.fit_transform(binarized)
+
+  df_player_class['player_class_binarized'] = binarized.tolist()
+  df_player_class['player_class_sparse'] = encoded
+  print(mlbin.classes_)
+  print(df_player_class.head(5))
 #+END_SRC
 
 #+RESULTS:
+#+begin_example
+['DRUID' 'HUNTER' 'MAGE' 'NEUTRAL' 'PALADIN' 'PRIEST' 'ROGUE' 'SHAMAN'
+ 'WARLOCK' 'WARRIOR']
+         id playerClass          player_class_binarized  \
+3    OG_121     WARLOCK  [0, 0, 0, 0, 0, 0, 0, 0, 1, 0]   
+6    OG_085        MAGE  [0, 0, 1, 0, 0, 0, 0, 0, 0, 0]   
+10   AT_076     PALADIN  [0, 0, 0, 0, 1, 0, 0, 0, 0, 0]   
+15  CS2_124     NEUTRAL  [0, 0, 0, 1, 0, 0, 0, 0, 0, 0]   
+17  GVG_079     NEUTRAL  [0, 0, 0, 1, 0, 0, 0, 0, 0, 0]   
 
-*** Binarize and encode the 
+                                  player_class_sparse  
+3     (0, 18)\t1.0\n  (0, 17)\t1.0\n  (0, 14)\t1.0...  
+6     (0, 18)\t1.0\n  (0, 17)\t1.0\n  (0, 14)\t1.0...  
+10    (0, 18)\t1.0\n  (0, 17)\t1.0\n  (0, 14)\t1.0...  
+15    (0, 18)\t1.0\n  (0, 17)\t1.0\n  (0, 14)\t1.0...  
+17    (0, 18)\t1.0\n  (0, 17)\t1.0\n  (0, 14)\t1.0...  
+#+end_example
 
+*** Binarize and encode the rarity 
+#+BEGIN_SRC ipython :session :results output
+  df_rarity = df[['id', 'rarity']]
+  mlbin = LabelBinarizer()
+  binarized = mlbin.fit_transform(df_rarity['rarity'])
+  enc = sklearn.preprocessing.OneHotEncoder()
+  encoded = enc.fit_transform(binarized)
 
+  df_rarity['rarity_binarized'] = binarized.tolist()
+  df_rarity['rarity_sparse'] = encoded
+  print(mlbin.classes_)
+  print(df_rarity.head(5))
+  print(type(df_rarity['rarity_sparse'][3]))
+#+END_SRC
 
+#+RESULTS:
+#+begin_example
+['COMMON' 'EPIC' 'FREE' 'LEGENDARY' 'RARE']
+         id     rarity rarity_binarized  \
+3    OG_121  LEGENDARY  [0, 0, 0, 1, 0]   
+6    OG_085       RARE  [0, 0, 0, 0, 1]   
+10   AT_076     COMMON  [1, 0, 0, 0, 0]   
+15  CS2_124       FREE  [0, 0, 1, 0, 0]   
+17  GVG_079     COMMON  [1, 0, 0, 0, 0]   
 
+                                        rarity_sparse  
+3     (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...  
+6     (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...  
+10    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...  
+15    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...  
+17    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...  
+<class 'scipy.sparse.csr.csr_matrix'>
+#+end_example
 
-* Spark stuff
+# *** Binarize and encode the play requirements
+# Condense each dictionary into a list of strings with "{key}_{val}"
+# #+BEGIN_SRC ipython :session 
+#   df_play_requirements = df[['id', 'playRequirements']]
+#   #df_play_requirements['playRequirements'].fillna(0, inplace=True)
+#   df_play_requirements['playRequirements'] = df_play_requirements[pd.notnull(df['playRequirements'])]['playRequirements'].apply(lambda x: [(k,v) for k,v in x.items()])
+#   print(df_play_requirements)
+# #+END_SRC
+
+# #+RESULTS:
+
+*** Join the dataframes together
+#+BEGIN_SRC ipython :session :results output
+  df_combined = df_n_stats.merge(df_mechanics, on='id')
+  df_combined = df_combined.merge(df_player_class, on='id')
+  df_combined = df_combined.merge(df_rarity, on='id')
+  print(df_combined.head(5))
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+        id    attack  cost    health        mechanics  \
+0   OG_121  0.583333  0.28  0.466667      [BATTLECRY]   
+1   OG_085  0.166667  0.16  0.266667           [NONE]   
+2   AT_076  0.250000  0.16  0.266667        [INSPIRE]   
+3  CS2_124  0.250000  0.12  0.066667         [CHARGE]   
+4  GVG_079  0.583333  0.32  0.466667  [DIVINE_SHIELD]   
+
+                                 mechanics_binarized  \
+0  [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...   
+1  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...   
+2  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ...   
+3  [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, ...   
+4  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, ...   
+
+                                    mechanics_sparse playerClass  \
+0    (0, 54)\t1.0\n  (0, 52)\t1.0\n  (0, 50)\t1.0...     WARLOCK   
+1    (0, 54)\t1.0\n  (0, 52)\t1.0\n  (0, 50)\t1.0...        MAGE   
+2    (0, 54)\t1.0\n  (0, 52)\t1.0\n  (0, 50)\t1.0...     PALADIN   
+3    (0, 54)\t1.0\n  (0, 52)\t1.0\n  (0, 50)\t1.0...     NEUTRAL   
+4    (0, 54)\t1.0\n  (0, 52)\t1.0\n  (0, 50)\t1.0...     NEUTRAL   
+
+           player_class_binarized  \
+0  [0, 0, 0, 0, 0, 0, 0, 0, 1, 0]   
+1  [0, 0, 1, 0, 0, 0, 0, 0, 0, 0]   
+2  [0, 0, 0, 0, 1, 0, 0, 0, 0, 0]   
+3  [0, 0, 0, 1, 0, 0, 0, 0, 0, 0]   
+4  [0, 0, 0, 1, 0, 0, 0, 0, 0, 0]   
+
+                                 player_class_sparse     rarity  \
+0    (0, 18)\t1.0\n  (0, 17)\t1.0\n  (0, 14)\t1.0...  LEGENDARY   
+1    (0, 18)\t1.0\n  (0, 17)\t1.0\n  (0, 14)\t1.0...       RARE   
+2    (0, 18)\t1.0\n  (0, 17)\t1.0\n  (0, 14)\t1.0...     COMMON   
+3    (0, 18)\t1.0\n  (0, 17)\t1.0\n  (0, 14)\t1.0...       FREE   
+4    (0, 18)\t1.0\n  (0, 17)\t1.0\n  (0, 14)\t1.0...     COMMON   
+
+  rarity_binarized                                      rarity_sparse  
+0  [0, 0, 0, 1, 0]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...  
+1  [0, 0, 0, 0, 1]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...  
+2  [1, 0, 0, 0, 0]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...  
+3  [0, 0, 1, 0, 0]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...  
+4  [1, 0, 0, 0, 0]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...  
+#+end_example
+
+Pass it into spark
 #+BEGIN_SRC ipython :session :results output
   import findspark
   findspark.init('/Users/peixianwang/Code/spark-2.0.0')
@@ -142,6 +299,122 @@ Filter out all the weird generated cards:
   context = pyspark.SparkContext(appName = 'hs2vec') #Spark variables are camelcase for whatever reason
   spark = SparkSession(context)
 #+END_SRC
+
+#+RESULTS:
+
+#+BEGIN_SRC ipython :session :results output
+  transpose_to_csc = lambda x: x.tocsc()
+  df_combined[['mechanics_sparse', 'player_class_sparse', 'rarity_sparse']] = df_combined[['mechanics_sparse','player_class_sparse', 'rarity_sparse']].applymap(lambda x: x.tocsc())
+  print(df_combined.dtypes)
+  #df_sparse = df_combined[['mechanics_sparse', 'player_class_sparse', 'rarity_sparse']].apply(lambda x: x.tocsc(), axis=0)
+  #combined_spark_df = spark.createDataFrame(df_combined)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+id                         object
+attack                    float64
+cost                      float64
+health                    float64
+mechanics                  object
+mechanics_binarized        object
+mechanics_sparse           object
+playerClass                object
+player_class_binarized     object
+player_class_sparse        object
+rarity                     object
+rarity_binarized           object
+rarity_sparse              object
+features                   object
+dtype: object
+#+end_example
+
+*** Pass into TSNE
+#+BEGIN_SRC ipython :session :results output 
+  from sklearn.decomposition import PCA
+  from scipy.sparse import hstack
+  df_combined['features'] = df_combined[['attack', 'cost', 'health']].values.tolist()
+  for i, row in df_combined.iterrows():
+      val = row['features']
+      val.extend(row['mechanics_binarized'])
+      val.extend(row['player_class_binarized'])
+      val.extend(row['rarity_binarized'])
+      df_combined.set_value(i, 'features', val)
+  print(df_combined.head(5))
+  print(len(df_combined['features'][0]))
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+        id    attack  cost    health        mechanics  \
+0   OG_121  0.583333  0.28  0.466667      [BATTLECRY]   
+1   OG_085  0.166667  0.16  0.266667           [NONE]   
+2   AT_076  0.250000  0.16  0.266667        [INSPIRE]   
+3  CS2_124  0.250000  0.12  0.066667         [CHARGE]   
+4  GVG_079  0.583333  0.32  0.466667  [DIVINE_SHIELD]   
+
+                                 mechanics_binarized  \
+0  [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...   
+1  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...   
+2  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ...   
+3  [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, ...   
+4  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, ...   
+
+                                    mechanics_sparse playerClass  \
+0    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...     WARLOCK   
+1    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...        MAGE   
+2    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...     PALADIN   
+3    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...     NEUTRAL   
+4    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...     NEUTRAL   
+
+           player_class_binarized  \
+0  [0, 0, 0, 0, 0, 0, 0, 0, 1, 0]   
+1  [0, 0, 1, 0, 0, 0, 0, 0, 0, 0]   
+2  [0, 0, 0, 0, 1, 0, 0, 0, 0, 0]   
+3  [0, 0, 0, 1, 0, 0, 0, 0, 0, 0]   
+4  [0, 0, 0, 1, 0, 0, 0, 0, 0, 0]   
+
+                                 player_class_sparse     rarity  \
+0    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...  LEGENDARY   
+1    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...       RARE   
+2    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...     COMMON   
+3    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...       FREE   
+4    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...     COMMON   
+
+  rarity_binarized                                      rarity_sparse  \
+0  [0, 0, 0, 1, 0]    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (3, 0)\t1.0\n ...   
+1  [0, 0, 0, 0, 1]    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (3, 0)\t1.0\n ...   
+2  [1, 0, 0, 0, 0]    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (3, 0)\t1.0\n ...   
+3  [0, 0, 1, 0, 0]    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (3, 0)\t1.0\n ...   
+4  [1, 0, 0, 0, 0]    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (3, 0)\t1.0\n ...   
+
+                                            features  
+0  [0.5833333333333333, 0.28, 0.4666666666666667,...  
+1  [0.16666666666666666, 0.16, 0.2666666666666666...  
+2  [0.25, 0.16, 0.26666666666666666, 0, 0, 0, 0, ...  
+3  [0.25, 0.12, 0.06666666666666667, 0, 0, 0, 0, ...  
+4  [0.5833333333333333, 0.32, 0.4666666666666667,...  
+46
+#+end_example
+
+#+BEGIN_SRC ipython :session :file tmp/out.png :exports both
+  from sklearn.manifold import TSNE
+  #tnse_model = TSNE(n_components=dimensions, n_iter=10000000, metric="correlation", learning_rate=50, early_exaggeration=500.0, perplexity=40.0)
+  tnse_model = TSNE(n_components = 3)
+  np.set_printoptions(suppress=True)
+  df_combined['model'] = tnse_model.fit_transform(df_combined['features'].tolist())
+#+END_SRC
+
+*** Create plotly graph
+#+BEGIN_SRC ipython :session :file  :exports both
+  import plotly.plotly as py
+
+#+END_SRC
+
+
+
+
+* Spark stuff
 
 #+RESULTS:
 
