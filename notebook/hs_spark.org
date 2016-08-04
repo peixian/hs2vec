@@ -290,18 +290,7 @@ Filter out all the weird generated cards:
 4  [1, 0, 0, 0, 0]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...  
 #+end_example
 
-Pass it into spark
-#+BEGIN_SRC ipython :session :results output
-  import findspark
-  findspark.init('/Users/peixianwang/Code/spark-2.0.0')
-  import pyspark
-  from pyspark.sql import SparkSession
-  context = pyspark.SparkContext(appName = 'hs2vec') #Spark variables are camelcase for whatever reason
-  spark = SparkSession(context)
-#+END_SRC
-
-#+RESULTS:
-
+convert the sparse matricies into csc format
 #+BEGIN_SRC ipython :session :results output
   transpose_to_csc = lambda x: x.tocsc()
   df_combined[['mechanics_sparse', 'player_class_sparse', 'rarity_sparse']] = df_combined[['mechanics_sparse','player_class_sparse', 'rarity_sparse']].applymap(lambda x: x.tocsc())
@@ -423,7 +412,6 @@ dtype: object
 : 4 -10.121653  -5.690847   7.774955        Force-Tank MAX     COMMON
 : ['LEGENDARY' 'RARE' 'COMMON' 'FREE' 'EPIC']
 
-
 *** Create plotly graph
 #+BEGIN_SRC ipython :session :file  :exports both
   import plotly.plotly as py
@@ -477,109 +465,3 @@ dtype: object
 #+RESULTS:
 : 'https://plot.ly/~sekki/26'
 
-
-
-
-* Spark stuff
-
-#+RESULTS:
-
-#+BEGIN_SRC ipython :session :results output
-  df = spark.read.json('../data/cards.json')
-  print(df_hsjson.printSchema())
-#+END_SRC
-
-#+RESULTS:
-#+begin_example
-root
- |-- artist: string (nullable = true)
- |-- attack: long (nullable = true)
- |-- collectible: boolean (nullable = true)
- |-- cost: long (nullable = true)
- |-- durability: long (nullable = true)
- |-- dust: array (nullable = true)
- |    |-- element: long (containsNull = true)
- |-- entourage: array (nullable = true)
- |    |-- element: string (containsNull = true)
- |-- faction: string (nullable = true)
- |-- flavor: string (nullable = true)
- |-- health: long (nullable = true)
- |-- howToEarn: string (nullable = true)
- |-- howToEarnGolden: string (nullable = true)
- |-- id: string (nullable = true)
- |-- mechanics: array (nullable = true)
- |    |-- element: string (containsNull = true)
- |-- name: string (nullable = true)
- |-- overload: long (nullable = true)
- |-- playRequirements: struct (nullable = true)
- |    |-- REQ_DAMAGED_TARGET: long (nullable = true)
- |    |-- REQ_ENEMY_TARGET: long (nullable = true)
- |    |-- REQ_ENEMY_WEAPON_EQUIPPED: long (nullable = true)
- |    |-- REQ_ENTIRE_ENTOURAGE_NOT_IN_PLAY: long (nullable = true)
- |    |-- REQ_FRIENDLY_MINION_DIED_THIS_GAME: long (nullable = true)
- |    |-- REQ_FRIENDLY_TARGET: long (nullable = true)
- |    |-- REQ_HERO_TARGET: long (nullable = true)
- |    |-- REQ_LEGENDARY_TARGET: long (nullable = true)
- |    |-- REQ_MINIMUM_ENEMY_MINIONS: long (nullable = true)
- |    |-- REQ_MINIMUM_TOTAL_MINIONS: long (nullable = true)
- |    |-- REQ_MINION_CAP_IF_TARGET_AVAILABLE: long (nullable = true)
- |    |-- REQ_MINION_OR_ENEMY_HERO: long (nullable = true)
- |    |-- REQ_MINION_TARGET: long (nullable = true)
- |    |-- REQ_MUST_TARGET_TAUNTER: long (nullable = true)
- |    |-- REQ_NONSELF_TARGET: long (nullable = true)
- |    |-- REQ_NUM_MINION_SLOTS: long (nullable = true)
- |    |-- REQ_STEADY_SHOT: long (nullable = true)
- |    |-- REQ_TARGET_FOR_COMBO: long (nullable = true)
- |    |-- REQ_TARGET_IF_AVAILABLE: long (nullable = true)
- |    |-- REQ_TARGET_IF_AVAILABLE_AND_DRAGON_IN_HAND: long (nullable = true)
- |    |-- REQ_TARGET_IF_AVAILABLE_AND_MINIMUM_FRIENDLY_MINIONS: long (nullable = true)
- |    |-- REQ_TARGET_MAX_ATTACK: long (nullable = true)
- |    |-- REQ_TARGET_MIN_ATTACK: long (nullable = true)
- |    |-- REQ_TARGET_TO_PLAY: long (nullable = true)
- |    |-- REQ_TARGET_WITH_RACE: long (nullable = true)
- |    |-- REQ_UNDAMAGED_TARGET: long (nullable = true)
- |    |-- REQ_WEAPON_EQUIPPED: long (nullable = true)
- |-- playerClass: string (nullable = true)
- |-- race: string (nullable = true)
- |-- rarity: string (nullable = true)
- |-- set: string (nullable = true)
- |-- spellDamage: long (nullable = true)
- |-- targetingArrowText: string (nullable = true)
- |-- text: string (nullable = true)
- |-- textInPlay: string (nullable = true)
- |-- type: string (nullable = true)
-
-None
-#+end_example
-
-Filter out the weird not-player cards
-#+BEGIN_SRC ipython :session :results output
-  df = df.filter(df['playerClass'] != 'null')
-  df = df.filter(df['cost'] == 'null')
-  df.show(5)
-#+END_SRC
-
-#+RESULTS:
-#+begin_example
-+--------------------+------+-----------+----+----------+--------------------+---------+-------+--------------------+------+--------------------+--------------------+-------+-------------+------------+--------+--------------------+-----------+-----+---------+-------+-----------+------------------+--------------------+----------+------+
-|              artist|attack|collectible|cost|durability|                dust|entourage|faction|              flavor|health|           howToEarn|     howToEarnGolden|     id|    mechanics|        name|overload|    playRequirements|playerClass| race|   rarity|    set|spellDamage|targetingArrowText|                text|textInPlay|  type|
-+--------------------+------+-----------+----+----------+--------------------+---------+-------+--------------------+------+--------------------+--------------------+-------+-------------+------------+--------+--------------------+-----------+-----+---------+-------+-----------+------------------+--------------------+----------+------+
-|Alex Horley Orlan...|  null|       true|   3|      null|                null|     null|   null|"I've just sucked...|  null|Unlocked at Level 1.|Unlocked at Level...|CS2_061|         null|  Drain Life|    null|[null,null,null,n...|    WARLOCK| null|     FREE|   CORE|       null|              null|Deal $2 damage. R...|      null| SPELL|
-|        Raven Mimura|  null|       true|   3|      null|    [40, 400, 5, 50]|     null|   null|Generally demons ...|  null|                null|                null|EX1_317|         null|Sense Demons|    null|                null|    WARLOCK| null|   COMMON|EXPERT1|       null|              null|Put 2 random Demo...|      null| SPELL|
-|Alex Horley Orlan...|     1|       true|   4|      null|[400, 1600, 100, ...|     null|   null|Crescendo himself...|     1|                null|                null| AT_019|[DEATHRATTLE]|  Dreadsteed|    null|                null|    WARLOCK|DEMON|     EPIC|    TGT|       null|              null|<b>Deathrattle:</...|      null|MINION|
-|     Slawomir Maniak|  null|       true|   0|      null|    [40, 400, 5, 50]|     null|   null|They're only smil...|  null|                null|                null|EX1_607|         null|  Inner Rage|    null|[null,null,null,n...|    WARRIOR| null|   COMMON|EXPERT1|       null|              null|Deal $1 damage to...|      null| SPELL|
-|          Andrew Hou|     4|       true|   7|      null|[1600, 3200, 400,...|     null|   null|With the help of ...|     2|                null|                null| AT_063|         null|     Acidmaw|    null|                null|     HUNTER|BEAST|LEGENDARY|    TGT|       null|              null|Whenever another ...|      null|MINION|
-+--------------------+------+-----------+----+----------+--------------------+---------+-------+--------------------+------+--------------------+--------------------+-------+-------------+------------+--------+--------------------+-----------+-----+---------+-------+-----------+------------------+--------------------+----------+------+
-only showing top 5 rows
-
-#+end_example
-
-#+BEGIN_SRC ipython :session :results output
-  df.fillna()
-
-  max_cost = df.agg({'cost': 'max'}).first()[0]
-  max_attack = df.agg({'attack': 'max'}).first()[0]
-  max_health = df.agg({'health': 'max'}).first()[0]
-
-
-#+END_SRC
