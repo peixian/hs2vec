@@ -402,14 +402,80 @@ dtype: object
   #tnse_model = TSNE(n_components=dimensions, n_iter=10000000, metric="correlation", learning_rate=50, early_exaggeration=500.0, perplexity=40.0)
   tnse_model = TSNE(n_components = 3)
   np.set_printoptions(suppress=True)
-  df_combined['model'] = tnse_model.fit_transform(df_combined['features'].tolist())
+  model = tnse_model.fit_transform(df_combined['features'].tolist())
 #+END_SRC
+
+#+BEGIN_SRC ipython :session :results output
+  df_plot = pd.DataFrame(model)
+  df_plot.columns = ['x', 'y', 'z']
+  df_plot['labels'] = list(map(lambda x: df[df['id'] == x]['name'].values[0], df_combined['id']))
+  df_plot['rarity'] = list(map(lambda x: df[df['id'] == x]['rarity'].values[0], df_combined['id']))
+  print(df_plot.head(5))
+  print(df_plot['rarity'].unique())
+#+END_SRC
+
+#+RESULTS:
+:            x          y          z                labels     rarity
+: 0  -4.479049  15.257524  -0.774990              Cho'gall  LEGENDARY
+: 1   7.489447  -4.172462  -0.489368  Demented Frostcaller       RARE
+: 2   5.430795  -7.699553   5.059074         Murloc Knight     COMMON
+: 3   1.909211  -0.061407  14.770687             Wolfrider       FREE
+: 4 -10.121653  -5.690847   7.774955        Force-Tank MAX     COMMON
+: ['LEGENDARY' 'RARE' 'COMMON' 'FREE' 'EPIC']
+
 
 *** Create plotly graph
 #+BEGIN_SRC ipython :session :file  :exports both
   import plotly.plotly as py
+  import plotly.graph_objs as go
 
+  colors = {'LEGENDARY': '#F535A5', 'RARE': '#3993F9', 'EPIC': '#CC47D5', 'COMMON': '#F3F9F1', 'FREE': '#263238' }
+  traces = []
+  clusters = []
+  for rarity in df_plot['rarity'].unique():
+      df_filtered = df_plot[df_plot['rarity'] == rarity]
+      trace = go.Scatter3d(
+          type = "scatter3d",
+          x = df_filtered['x'],
+          y = df_filtered['y'],
+          z = df_filtered['z'],
+          mode = 'markers',
+          name = rarity,
+          text = df_filtered['labels'],
+          marker = dict(
+              color = colors[rarity]
+          )
+      )
+      traces.append(trace)
+      cluster = dict(
+          alphahull = 7,
+          name = rarity,
+          opacity = 0.1,
+          type = "mesh3d",
+          x = df_filtered['x'], y = df_filtered['y'], z = df_filtered['z']
+      )
+      traces.append(cluster)
+  empty_axis = dict(zeroline=False, showaxeslabels=False, showticklabels=False, title='')
+  layout = go.Layout(
+      margin=dict(
+          l=0,
+          r=0,
+          b=0,
+          t=0
+      ),
+      scene = dict(
+        xaxis = empty_axis,
+        yaxis = empty_axis,
+        zaxis = empty_axis
+    )
+  )
+  #print(clusters[:2])
+  fig = go.Figure(data = traces, layout=layout)
+  py.plot(fig)
 #+END_SRC
+
+#+RESULTS:
+: 'https://plot.ly/~sekki/26'
 
 
 
