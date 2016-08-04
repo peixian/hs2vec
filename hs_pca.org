@@ -226,22 +226,31 @@ Filter out all the weird generated cards:
 <class 'scipy.sparse.csr.csr_matrix'>
 #+end_example
 
-# *** Binarize and encode the play requirements
-# Condense each dictionary into a list of strings with "{key}_{val}"
-# #+BEGIN_SRC ipython :session 
-#   df_play_requirements = df[['id', 'playRequirements']]
-#   #df_play_requirements['playRequirements'].fillna(0, inplace=True)
-#   df_play_requirements['playRequirements'] = df_play_requirements[pd.notnull(df['playRequirements'])]['playRequirements'].apply(lambda x: [(k,v) for k,v in x.items()])
-#   print(df_play_requirements)
-# #+END_SRC
+*** Binarize and encode the play requirements
+Condense each dictionary into a list of strings with "{key}_{val}"
+#+BEGIN_SRC ipython :session 
+  df_play_requirements = df[['id', 'playRequirements']]
+  #df_play_requirements['playRequirements'].fillna(0, inplace=True)
+  l_1 = df_play_requirements[pd.notnull(df['playRequirements'])]['playRequirements'].map(lambda x: ["{}_{}".format(k, v) for k,v in x.items()])
+  l_2  = df_play_requirements[pd.isnull(df['playRequirements'])]['playRequirements'].map(lambda x: ['NONE'])
+  df_play_requirements['playRequirements'] = l_1.combine_first(l_2)
+  #df_play_requirements[pd.isnull(df['playRequirements'])]['playRequirements'] = ['NONE']*null_length
+  #print(df_play_requirements)
+  #print(pd.concat([l_1, l_2], axis=1))
+  mlbin = MultiLabelBinarizer()
+  binarized = mlbin.fit_transform(df_play_requirements['playRequirements'])
+  df_play_requirements['play_requirements_binarized'] = binarized.tolist()
+  print(mlbin.classes_)
+#+END_SRC
 
-# #+RESULTS:
+#+RESULTS:
 
 *** Join the dataframes together
 #+BEGIN_SRC ipython :session :results output
   df_combined = df_n_stats.merge(df_mechanics, on='id')
   df_combined = df_combined.merge(df_player_class, on='id')
   df_combined = df_combined.merge(df_rarity, on='id')
+  df_combined = df_combined.merge(df_play_requirements, on='id')
   print(df_combined.head(5))
 #+END_SRC
 
@@ -282,12 +291,19 @@ Filter out all the weird generated cards:
 3    (0, 18)\t1.0\n  (0, 17)\t1.0\n  (0, 14)\t1.0...       FREE   
 4    (0, 18)\t1.0\n  (0, 17)\t1.0\n  (0, 14)\t1.0...     COMMON   
 
-  rarity_binarized                                      rarity_sparse  
-0  [0, 0, 0, 1, 0]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...  
-1  [0, 0, 0, 0, 1]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...  
-2  [1, 0, 0, 0, 0]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...  
-3  [0, 0, 1, 0, 0]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...  
-4  [1, 0, 0, 0, 0]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...  
+  rarity_binarized                                      rarity_sparse  \
+0  [0, 0, 0, 1, 0]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...   
+1  [0, 0, 0, 0, 1]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...   
+2  [1, 0, 0, 0, 0]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...   
+3  [0, 0, 1, 0, 0]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...   
+4  [1, 0, 0, 0, 0]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...   
+
+  playRequirements                        play_requirements_binarized  
+0           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...  
+1           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...  
+2           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...  
+3           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...  
+4           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...  
 #+end_example
 
 convert the sparse matricies into csc format
@@ -314,7 +330,6 @@ player_class_sparse        object
 rarity                     object
 rarity_binarized           object
 rarity_sparse              object
-features                   object
 dtype: object
 #+end_example
 
@@ -328,6 +343,7 @@ dtype: object
       val.extend(row['mechanics_binarized'])
       val.extend(row['player_class_binarized'])
       val.extend(row['rarity_binarized'])
+      val.extend(row['play_requirements_binarized'])
       df_combined.set_value(i, 'features', val)
   print(df_combined.head(5))
   print(len(df_combined['features'][0]))
@@ -350,11 +366,11 @@ dtype: object
 4  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, ...   
 
                                     mechanics_sparse playerClass  \
-0    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...     WARLOCK   
-1    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...        MAGE   
-2    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...     PALADIN   
-3    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...     NEUTRAL   
-4    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...     NEUTRAL   
+0    (0, 54)\t1.0\n  (0, 52)\t1.0\n  (0, 50)\t1.0...     WARLOCK   
+1    (0, 54)\t1.0\n  (0, 52)\t1.0\n  (0, 50)\t1.0...        MAGE   
+2    (0, 54)\t1.0\n  (0, 52)\t1.0\n  (0, 50)\t1.0...     PALADIN   
+3    (0, 54)\t1.0\n  (0, 52)\t1.0\n  (0, 50)\t1.0...     NEUTRAL   
+4    (0, 54)\t1.0\n  (0, 52)\t1.0\n  (0, 50)\t1.0...     NEUTRAL   
 
            player_class_binarized  \
 0  [0, 0, 0, 0, 0, 0, 0, 0, 1, 0]   
@@ -364,18 +380,25 @@ dtype: object
 4  [0, 0, 0, 1, 0, 0, 0, 0, 0, 0]   
 
                                  player_class_sparse     rarity  \
-0    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...  LEGENDARY   
-1    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...       RARE   
-2    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...     COMMON   
-3    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...       FREE   
-4    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...     COMMON   
+0    (0, 18)\t1.0\n  (0, 17)\t1.0\n  (0, 14)\t1.0...  LEGENDARY   
+1    (0, 18)\t1.0\n  (0, 17)\t1.0\n  (0, 14)\t1.0...       RARE   
+2    (0, 18)\t1.0\n  (0, 17)\t1.0\n  (0, 14)\t1.0...     COMMON   
+3    (0, 18)\t1.0\n  (0, 17)\t1.0\n  (0, 14)\t1.0...       FREE   
+4    (0, 18)\t1.0\n  (0, 17)\t1.0\n  (0, 14)\t1.0...     COMMON   
 
   rarity_binarized                                      rarity_sparse  \
-0  [0, 0, 0, 1, 0]    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (3, 0)\t1.0\n ...   
-1  [0, 0, 0, 0, 1]    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (3, 0)\t1.0\n ...   
-2  [1, 0, 0, 0, 0]    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (3, 0)\t1.0\n ...   
-3  [0, 0, 1, 0, 0]    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (3, 0)\t1.0\n ...   
-4  [1, 0, 0, 0, 0]    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (3, 0)\t1.0\n ...   
+0  [0, 0, 0, 1, 0]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...   
+1  [0, 0, 0, 0, 1]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...   
+2  [1, 0, 0, 0, 0]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...   
+3  [0, 0, 1, 0, 0]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...   
+4  [1, 0, 0, 0, 0]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...   
+
+  playRequirements                        play_requirements_binarized  \
+0           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...   
+1           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...   
+2           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...   
+3           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...   
+4           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...   
 
                                             features  
 0  [0.5833333333333333, 0.28, 0.4666666666666667,...  
@@ -383,10 +406,10 @@ dtype: object
 2  [0.25, 0.16, 0.26666666666666666, 0, 0, 0, 0, ...  
 3  [0.25, 0.12, 0.06666666666666667, 0, 0, 0, 0, ...  
 4  [0.5833333333333333, 0.32, 0.4666666666666667,...  
-46
+78
 #+end_example
 
-#+BEGIN_SRC ipython :session :file tmp/out.png :exports both
+#+BEGIN_SRC ipython :session 
   from sklearn.manifold import TSNE
   #tnse_model = TSNE(n_components=dimensions, n_iter=10000000, metric="correlation", learning_rate=50, early_exaggeration=500.0, perplexity=40.0)
   tnse_model = TSNE(n_components = 3)
@@ -399,50 +422,79 @@ dtype: object
   df_plot.columns = ['x', 'y', 'z']
   df_plot['labels'] = list(map(lambda x: df[df['id'] == x]['name'].values[0], df_combined['id']))
   df_plot['rarity'] = list(map(lambda x: df[df['id'] == x]['rarity'].values[0], df_combined['id']))
+  df_plot['cost'] = list(map(lambda x: df[df['id'] == x]['cost'].values[0], df_combined['id']))
+  df_plot['player_class'] = df_combined['playerClass']
   print(df_plot.head(5))
-  print(df_plot['rarity'].unique())
 #+END_SRC
 
 #+RESULTS:
-:            x          y          z                labels     rarity
-: 0  -4.479049  15.257524  -0.774990              Cho'gall  LEGENDARY
-: 1   7.489447  -4.172462  -0.489368  Demented Frostcaller       RARE
-: 2   5.430795  -7.699553   5.059074         Murloc Knight     COMMON
-: 3   1.909211  -0.061407  14.770687             Wolfrider       FREE
-: 4 -10.121653  -5.690847   7.774955        Force-Tank MAX     COMMON
-: ['LEGENDARY' 'RARE' 'COMMON' 'FREE' 'EPIC']
+#+begin_example
+           x          y          z                labels     rarity  cost  \
+0  13.589235 -14.825255   2.765579              Cho'gall  LEGENDARY   7.0   
+1   6.008346  15.945534  -0.347348  Demented Frostcaller       RARE   4.0   
+2   2.265124   3.652773 -11.588513         Murloc Knight     COMMON   4.0   
+3  -9.490433   9.728613  -7.587733             Wolfrider       FREE   3.0   
+4 -12.243863  17.352402  -7.259411        Force-Tank MAX     COMMON   8.0   
+
+  player_class  
+0      WARLOCK  
+1         MAGE  
+2      PALADIN  
+3      NEUTRAL  
+4      NEUTRAL  
+#+end_example
+
+Write to csv
+#+BEGIN_SRC ipython :session :results output
+  df_plot.to_csv('../results/model.tsv', sep='\t')
+#+END_SRC
+
+#+RESULTS:
 
 *** Create plotly graph
 #+BEGIN_SRC ipython :session :file  :exports both
   import plotly.plotly as py
   import plotly.graph_objs as go
 
-  colors = {'LEGENDARY': '#F535A5', 'RARE': '#3993F9', 'EPIC': '#CC47D5', 'COMMON': '#F3F9F1', 'FREE': '#263238' }
+  rarity_colors = {'LEGENDARY': '#F535A5', 'RARE': '#3993F9', 'EPIC': '#CC47D5', 'COMMON': '#F3F9F1', 'FREE': '#263238' }
+  class_colors = {'WARRIOR': '#8D0F01',
+                  'SHAMAN': '#011784',
+                  'ROGUE': '#4B4C47',
+                  'PALADIN': '#A98E00',
+                  'HUNTER': '#006E00',
+                  'DRUID': '#703505',
+                  'WARLOCK': '#7623AD',
+                  'MAGE': '#0091AB',
+                  'PRIEST': '#C7C19E', 
+                  'NEUTRAL': '#263238'} #colors from: https://www.reddit.com/r/hearthstone/comments/2d0x31/mtg_has_the_color_pie_here_is_a_hearthstone_color/
   traces = []
   clusters = []
-  for rarity in df_plot['rarity'].unique():
-      df_filtered = df_plot[df_plot['rarity'] == rarity]
+  category = df_plot['player_class']
+  for card_iter in category.unique():
+      df_filtered = df_plot[category == card_iter]
       trace = go.Scatter3d(
           type = "scatter3d",
           x = df_filtered['x'],
           y = df_filtered['y'],
           z = df_filtered['z'],
           mode = 'markers',
-          name = rarity,
+          name = card_iter,
           text = df_filtered['labels'],
           marker = dict(
-              color = colors[rarity]
+              color = class_colors[card_iter]
           )
       )
       traces.append(trace)
       cluster = dict(
-          alphahull = 7,
-          name = rarity,
+          alphahull = 3,
+          name = card_iter,
           opacity = 0.1,
           type = "mesh3d",
+          color = class_colors[card_iter],
           x = df_filtered['x'], y = df_filtered['y'], z = df_filtered['z']
       )
-      traces.append(cluster)
+      if card_iter != 'NEUTRAL': #don't bother with clusters for neutral
+          traces.append(cluster)
   empty_axis = dict(zeroline=False, showaxeslabels=False, showticklabels=False, title='')
   layout = go.Layout(
       margin=dict(
@@ -455,7 +507,9 @@ dtype: object
         xaxis = empty_axis,
         yaxis = empty_axis,
         zaxis = empty_axis
-    )
+    ),
+    paper_bgcolor='#f7f8fa',
+    plot_bgcolor='#f7f8fa'
   )
   #print(clusters[:2])
   fig = go.Figure(data = traces, layout=layout)
@@ -463,5 +517,5 @@ dtype: object
 #+END_SRC
 
 #+RESULTS:
-: 'https://plot.ly/~sekki/26'
+: 'https://plot.ly/~sekki/43'
 
