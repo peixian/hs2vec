@@ -71,8 +71,8 @@ card_set         card set
 
 ### Code:<a id="orgheadline5"></a>
 
-All the code can be found in <./notebooks/hs_pca.md>.  
-This was made in org-babel, but github doesn't play as nice with org as it does with ipython notebooks, so there's a <./hs_pca.md> file for easier viewing online. 
+All the code can be found in [hs<sub>pca.org</sub>](./notebook/hs_pca.md). 
+This was made in org-babel, but github doesn't play as nice with org as it does with ipython notebooks, so there's a [hs<sub>pca.md</sub>](./notebooks/hs_pca.md) file for easier viewing online. 
 
 1.  Requirements:
 

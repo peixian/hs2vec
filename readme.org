@@ -52,8 +52,8 @@ There's two files in the results folder: features.csv and model.csv.
 #+END_SRC
 
 *** Code:
-All the code can be found in [[./notebooks/hs_pca.org]].  
-This was made in org-babel, but github doesn't play as nice with org as it does with ipython notebooks, so there's a [[./hs_pca.md]] file for easier viewing online. 
+All the code can be found in [[./notebook/hs_pca.org][hs_pca.org]]. 
+This was made in org-babel, but github doesn't play as nice with org as it does with ipython notebooks, so there's a [[./notebooks/hs_pca.md][hs_pca.md]] file for easier viewing online. 
 
 **** Requirements:
 If you want to run the org file you'll need scipi, numpy, pandas and scikit-learn. 
