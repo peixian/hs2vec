@@ -1,8 +1,9 @@
 - [Maps Hearthstone cards to vectors for easy comparison](#sec-1)
     - [Demo - <https://peixian.github.io/hs2vec/>](#sec-1-0-1)
-    - [What is this?](#sec-1-0-2)
-    - [Data:](#sec-1-0-3)
-    - [Code:](#sec-1-0-4)
+    - [Screenshot:](#sec-1-0-2)
+    - [What is this?](#sec-1-0-3)
+    - [Data:](#sec-1-0-4)
+    - [Code:](#sec-1-0-5)
   - [References:](#sec-1-1)
     - [[word2vec](https://radimrehurek.com/gensim/models/word2vec.html)](#sec-1-1-1)
     - [[web patterns](http://www.clips.ua.ac.be/pages/pattern-web)](#sec-1-1-2)
@@ -11,11 +12,15 @@
     - [[CardCrunch](https://github.com/PAK90/cardcrunch)](#sec-1-1-5)
     - [[pokemon-3d](https://github.com/minimaxir/pokemon-3d)](#sec-1-1-6)
 
-# Maps Hearthstone cards to vectors for easy comparison<a id="orgheadline13"></a>
+# Maps Hearthstone cards to vectors for easy comparison<a id="orgheadline14"></a>
 
 ### Demo - <https://peixian.github.io/hs2vec/><a id="orgheadline1"></a>
 
-### What is this?<a id="orgheadline2"></a>
+### Screenshot:<a id="orgheadline2"></a>
+
+[screenshot.png](./screenshot.png)
+
+### What is this?<a id="orgheadline3"></a>
 
 Inspired by yhat's [word2vec](https://radimrehurek.com/gensim/models/word2vec.html) and minimaxir's [pokemon-3d](https://github.com/minimaxir/pokemon-3d) projects, I decided to see if it was possible to visualize all Hearthstone cards in 3d space. This is done in a few steps:
 
@@ -24,7 +29,7 @@ Inspired by yhat's [word2vec](https://radimrehurek.com/gensim/models/word2vec.ht
 3.  Dump everything into PCA and reduce it down to 50 dimensions (see <http://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html>)
 4.  Use TNSE to condense into 3 dimensions and plot.
 
-### Data:<a id="orgheadline3"></a>
+### Data:<a id="orgheadline4"></a>
 
 There's two files in the results folder: features.csv and model.csv.
 
@@ -69,25 +74,25 @@ card_info        card text
 card_set         card set
 ```
 
-### Code:<a id="orgheadline5"></a>
+### Code:<a id="orgheadline6"></a>
 
-All the code can be found in [hs<sub>pca.org</sub>](./notebook/hs_pca.md). 
+All the code can be found in [hs<sub>pca.org</sub>](./notebooks/hs_pca.md). 
 This was made in org-babel, but github doesn't play as nice with org as it does with ipython notebooks, so there's a [hs<sub>pca.md</sub>](./notebooks/hs_pca.md) file for easier viewing online. 
 
 1.  Requirements:
 
     If you want to run the org file you'll need scipi, numpy, pandas and scikit-learn. 
 
-## References:<a id="orgheadline12"></a>
+## References:<a id="orgheadline13"></a>
 
-### [word2vec](https://radimrehurek.com/gensim/models/word2vec.html)<a id="orgheadline6"></a>
+### [word2vec](https://radimrehurek.com/gensim/models/word2vec.html)<a id="orgheadline7"></a>
 
-### [web patterns](http://www.clips.ua.ac.be/pages/pattern-web)<a id="orgheadline7"></a>
+### [web patterns](http://www.clips.ua.ac.be/pages/pattern-web)<a id="orgheadline8"></a>
 
-### [word2map](https://github.com/overlap-ai/words2map)<a id="orgheadline8"></a>
+### [word2map](https://github.com/overlap-ai/words2map)<a id="orgheadline9"></a>
 
-### [mtgencode](https://github.com/billzorn/mtgencode)<a id="orgheadline9"></a>
+### [mtgencode](https://github.com/billzorn/mtgencode)<a id="orgheadline10"></a>
 
-### [CardCrunch](https://github.com/PAK90/cardcrunch)<a id="orgheadline10"></a>
+### [CardCrunch](https://github.com/PAK90/cardcrunch)<a id="orgheadline11"></a>
 
-### [pokemon-3d](https://github.com/minimaxir/pokemon-3d)<a id="orgheadline11"></a>
+### [pokemon-3d](https://github.com/minimaxir/pokemon-3d)<a id="orgheadline12"></a>
