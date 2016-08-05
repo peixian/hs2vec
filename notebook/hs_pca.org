@@ -591,9 +591,16 @@ Name: pca_features, dtype: object
 4      GVG  
 #+end_example
 
-Write to csv
+Write out plot to a csv file
 #+BEGIN_SRC ipython :session 
-  df_plot.to_csv('../results/model.tsv', sep='\t')
+  df_plot.to_csv('../results/model.csv')
+#+END_SRC
+
+#+RESULTS:
+
+Write out the features array to a csv file
+#+BEGIN_SRC ipython :session 
+  df_combined.to_csv('../results/features.csv')
 #+END_SRC
 
 #+RESULTS:
@@ -604,6 +611,7 @@ Write to csv
 
 #+RESULTS:
 #+begin_example
+Unnamed: 0        int64
 x               float64
 y               float64
 z               float64
@@ -621,7 +629,7 @@ dtype: object
 #+BEGIN_SRC ipython :session :file  :exports both
   import plotly.plotly as py
   import plotly.graph_objs as go
-
+  import pandas as pd
   def create_text(df):
       convert = lambda x: '{}:<br>{}'.format(x[0], x[1])
       return df.apply(convert, axis=1)
@@ -631,10 +639,11 @@ dtype: object
   standard_sets = ('OG', 'TGT', 'CORE', 'BRM', 'LOE')
   traces = []
   clusters = []
+  df_plot = pd.read_csv('../results/model.csv')
   category = df_plot['player_class']
   for card_iter in category.unique():
       df_filtered = df_plot[(category == card_iter)]
-      df_filtered = df_filtered.query('card_set in {}'.format(standard_sets))
+      #df_filtered = df_filtered.query('card_set in {}'.format(standard_sets))
       trace = go.Scatter3d(
           type = "scatter3d",
           x = df_filtered['x'],
@@ -651,7 +660,7 @@ dtype: object
       cluster = dict(
           alphahull = 3,
           name = card_iter,
-          opacity = 0.1,
+          opacity = 0.05,
           type = "mesh3d",
           color = class_colors[card_iter],
           x = df_filtered['x'], y = df_filtered['y'], z = df_filtered['z']
@@ -659,12 +668,13 @@ dtype: object
       #if card_iter != 'NEUTRAL': #don't bother with clusters for neutral
           #traces.append(cluster)
   empty_axis = dict(zeroline=False, showaxeslabels=False, showticklabels=False, title='')
-  layout = go.Layout(
+  layout = dict(
+      title = '3D Projection of All Wild Cards',
       margin=dict(
           l=0,
           r=0,
           b=0,
-          t=0
+          t=100
       ),
       scene = dict(
         xaxis = empty_axis,
@@ -682,5 +692,5 @@ dtype: object
 #+END_SRC
 
 #+RESULTS:
-: 'https://plot.ly/~sekki/79'
+: 'https://plot.ly/~sekki/91'
 

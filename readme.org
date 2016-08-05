@@ -26,3 +26,4 @@ If you have the usual tools of the trade for ml (pandas, numpy, etc), this'll be
 *** [[https://github.com/overlap-ai/words2map][word2map]]
 *** [[https://github.com/billzorn/mtgencode][mtgencode]]
 *** [[https://github.com/PAK90/cardcrunch][CardCrunch]]
+*** [[https://github.com/minimaxir/pokemon-3d][pokemon-3d]]
