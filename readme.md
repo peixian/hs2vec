@@ -18,7 +18,7 @@
 
 ### Screenshot:<a id="orgheadline2"></a>
 
-[screenshot.png](./screenshot.png)
+![img](//raw.githubusercontent.com/peixian/hs2vec/gh-pages/screenshot.png)
 
 ### What is this?<a id="orgheadline3"></a>
 
