@@ -1,7 +1,7 @@
 * Maps Hearthstone cards to vectors for easy comparison
 *** Demo - https://peixian.github.io/hs2vec/
 *** Screenshot:
-[[https://raw.githubusercontent.com/peixian/hs2vec/gh-pages/screenshot.png]]
+[[https://raw.githubusercontent.com/peixian/hs2vec/gh-pages/screenshot.png][https://raw.githubusercontent.com/peixian/hs2vec/gh-pages/screenshot.png]]
 *** What is this?
 Inspired by yhat's [[https://radimrehurek.com/gensim/models/word2vec.html][word2vec]] and minimaxir's [[https://github.com/minimaxir/pokemon-3d][pokemon-3d]] projects, I decided to see if it was possible to visualize all Hearthstone cards in 3d space. This is done in a few steps:
 
