@@ -424,6 +424,8 @@ playRequirements                object
 play_requirements_binarized     object
 type                            object
 type_binarized                  object
+text                            object
+damage_binarized                object
 dtype: object
 #+end_example
 
@@ -461,11 +463,11 @@ dtype: object
 4  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, ...   
 
                                     mechanics_sparse playerClass  \
-0    (0, 54)\t1.0\n  (0, 52)\t1.0\n  (0, 50)\t1.0...     WARLOCK   
-1    (0, 54)\t1.0\n  (0, 52)\t1.0\n  (0, 50)\t1.0...        MAGE   
-2    (0, 54)\t1.0\n  (0, 52)\t1.0\n  (0, 50)\t1.0...     PALADIN   
-3    (0, 54)\t1.0\n  (0, 52)\t1.0\n  (0, 50)\t1.0...     NEUTRAL   
-4    (0, 54)\t1.0\n  (0, 52)\t1.0\n  (0, 50)\t1.0...     NEUTRAL   
+0    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...     WARLOCK   
+1    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...        MAGE   
+2    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...     PALADIN   
+3    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...     NEUTRAL   
+4    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...     NEUTRAL   
 
            player_class_binarized  \
 0  [0, 0, 0, 0, 0, 0, 0, 0, 1, 0]   
@@ -475,18 +477,18 @@ dtype: object
 4  [0, 0, 0, 1, 0, 0, 0, 0, 0, 0]   
 
                                  player_class_sparse     rarity  \
-0    (0, 18)\t1.0\n  (0, 17)\t1.0\n  (0, 14)\t1.0...  LEGENDARY   
-1    (0, 18)\t1.0\n  (0, 17)\t1.0\n  (0, 14)\t1.0...       RARE   
-2    (0, 18)\t1.0\n  (0, 17)\t1.0\n  (0, 14)\t1.0...     COMMON   
-3    (0, 18)\t1.0\n  (0, 17)\t1.0\n  (0, 14)\t1.0...       FREE   
-4    (0, 18)\t1.0\n  (0, 17)\t1.0\n  (0, 14)\t1.0...     COMMON   
+0    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...  LEGENDARY   
+1    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...       RARE   
+2    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...     COMMON   
+3    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...       FREE   
+4    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (2, 0)\t1.0\n ...     COMMON   
 
   rarity_binarized                                      rarity_sparse  \
-0  [0, 0, 0, 1, 0]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...   
-1  [0, 0, 0, 0, 1]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...   
-2  [1, 0, 0, 0, 0]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...   
-3  [0, 0, 1, 0, 0]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...   
-4  [1, 0, 0, 0, 0]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...   
+0  [0, 0, 0, 1, 0]    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (3, 0)\t1.0\n ...   
+1  [0, 0, 0, 0, 1]    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (3, 0)\t1.0\n ...   
+2  [1, 0, 0, 0, 0]    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (3, 0)\t1.0\n ...   
+3  [0, 0, 1, 0, 0]    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (3, 0)\t1.0\n ...   
+4  [1, 0, 0, 0, 0]    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (3, 0)\t1.0\n ...   
 
   playRequirements                        play_requirements_binarized    type  \
 0           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...  MINION   
@@ -568,11 +570,11 @@ Name: pca_features, dtype: object
 #+RESULTS:
 #+begin_example
           x         y         z                labels     rarity  cost  \
-0  0.116295 -3.558708 -0.176540              Cho'gall  LEGENDARY  0.28   
-1  1.691292  1.244660 -2.092343  Demented Frostcaller       RARE  0.16   
-2 -1.261744 -1.245024  1.324879         Murloc Knight     COMMON  0.16   
-3  0.104581 -1.624948 -2.852664             Wolfrider       FREE  0.12   
-4 -1.433805 -1.249642 -0.855692        Force-Tank MAX     COMMON  0.32   
+0  1.918743 -1.339875 -0.751272              Cho'gall  LEGENDARY  0.28   
+1 -2.811777 -2.071947 -1.561556  Demented Frostcaller       RARE  0.16   
+2 -0.277863 -0.774411  3.019803         Murloc Knight     COMMON  0.16   
+3  0.336038  1.061656  3.404638             Wolfrider       FREE  0.12   
+4 -1.392386 -0.609566  4.421855        Force-Tank MAX     COMMON  0.32   
 
   player_class    type                                          card_info  \
 0      WARLOCK  MINION  <b>Battlecry:</b> The next spell you cast this...   
@@ -632,7 +634,7 @@ dtype: object
   category = df_plot['player_class']
   for card_iter in category.unique():
       df_filtered = df_plot[(category == card_iter)]
-      #df_filtered = df_filtered.query('card_set in {}'.format(standard_sets))
+      df_filtered = df_filtered.query('card_set in {}'.format(standard_sets))
       trace = go.Scatter3d(
           type = "scatter3d",
           x = df_filtered['x'],
@@ -680,5 +682,5 @@ dtype: object
 #+END_SRC
 
 #+RESULTS:
-: 'https://plot.ly/~sekki/73'
+: 'https://plot.ly/~sekki/75'
 
