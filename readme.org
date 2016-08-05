@@ -1,4 +1,5 @@
 * Maps Hearthstone cards to vectors for easy comparison
+*** Demo - https://peixian.github.io/hs2vec/
 * Installation:
 If you have the usual tools of the trade for ml (pandas, numpy, etc), this'll be easy. Otherwise strap in.
 
