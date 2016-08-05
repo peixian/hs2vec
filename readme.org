@@ -2,8 +2,7 @@
 * Installation:
 If you have the usual tools of the trade for ml (pandas, numpy, etc), this'll be easy. Otherwise strap in.
 
-1. Install [[https://spark.apache.org/downloads.html][spark]] and [[https://stackoverflow.com/questions/28829757/unable-to-add-spark-to-pythonpath][pyspark to your path]].
-2. Install [[https://www.continuum.io/downloads][anaconda]] and create a new virtualenv in python3 with pandas and numpy.
+1. Install [[https://www.continuum.io/downloads][anaconda]] and create a new virtualenv in python3 with pandas and numpy.
 3. Run the following script:
 #+BEGIN_SRC sh :results output
   mkdir hearthstone_data
