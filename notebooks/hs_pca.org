@@ -628,9 +628,74 @@ dtype: object
   import plotly.plotly as py
   import plotly.graph_objs as go
   import pandas as pd
+  from sklearn.neighbors import KDTree
+
   def create_text(df):
       convert = lambda x: '{}:<br>{}'.format(x[0], x[1])
       return df.apply(convert, axis=1)
+
+  def create_plot(df_plot, filter_category, colors, clusters = False, title=''):
+      """
+      Makes a plotly 3d scatter chart of the data
+      :param filter_category: The column to divide the filters into
+      :param color: color values to take on
+      :param clusters: Whether to draw clusters or not
+      :type filter_category: string
+      :type color: dict
+      :type clusters: bool
+      """
+      traces = []
+      #if clusters:
+          #tree = KDTree(df_plot[['x', 'y', 'z']].values.tolist(), leaf_size = 2)
+      for card_iter in category.unique():
+          df_filtered = df_plot[(df_plot[filter_category] == card_iter)]
+          trace = go.Scatter3d(
+              type = "scatter3d",
+              x = df_filtered['x'],
+              y = df_filtered['y'],
+              z = df_filtered['z'],
+              mode = 'markers',
+              name = card_iter,
+              text = create_text(df_filtered[['labels', 'card_info']]),
+              marker = dict(
+                  color = colors[card_iter]
+              )
+          )
+          traces.append(trace)
+          if clusters:
+              #indicies = tree.query()
+              cluster = dict(
+                  alphahull = 3,
+                  name = card_iter,
+                  opacity = 0.05,
+                  type = "mesh3d",
+                  color = colors[card_iter],
+                  x = df_filtered['x'], y = df_filtered['y'], z = df_filtered['z']
+              )
+              if card_iter != 'NEUTRAL': #don't bother with clusters for neutral
+                  traces.append(cluster)
+      empty_axis = dict(zeroline=False, showaxeslabels=False, showticklabels=False, title='')
+      layout = dict(
+          title = title,
+          margin=dict(
+              l=0,
+              r=0,
+              b=0,
+              t=100
+          ),
+          scene = dict(
+              xaxis = empty_axis,
+              yaxis = empty_axis,
+              zaxis = empty_axis
+          ),
+          legend = dict (
+              orientation = 'h'
+          ),
+          paper_bgcolor='#f7f8fa',
+          plot_bgcolor='#f7f8fa'
+      )
+      fig = go.Figure(data = traces, layout=layout)
+      py.plot(fig)
 
   rarity_colors = {'LEGENDARY': '#F535A5', 'RARE': '#3993F9', 'EPIC': '#CC47D5', 'COMMON': '#F3F9F1', 'FREE': '#263238' }
   class_colors = {'WARRIOR': '#8D0F01', 'SHAMAN': '#011784', 'ROGUE': '#4B4C47', 'PALADIN': '#A98E00', 'HUNTER': '#006E00', 'DRUID': '#703505', 'WARLOCK': '#7623AD', 'MAGE': '#0091AB', 'PRIEST': '#C7C19E', 'NEUTRAL': '#263238'} #colors from: https://www.reddit.com/r/hearthstone/comments/2d0x31/mtg_has_the_color_pie_here_is_a_hearthstone_color/
@@ -639,56 +704,57 @@ dtype: object
   clusters = []
   df_plot = pd.read_csv('../results/model.csv')
   category = df_plot['player_class']
-  for card_iter in category.unique():
-      df_filtered = df_plot[(category == card_iter)]
-      #df_filtered = df_filtered.query('card_set in {}'.format(standard_sets))
-      trace = go.Scatter3d(
-          type = "scatter3d",
-          x = df_filtered['x'],
-          y = df_filtered['y'],
-          z = df_filtered['z'],
-          mode = 'markers',
-          name = card_iter,
-          text = create_text(df_filtered[['labels', 'card_info']]),
-          marker = dict(
-              color = class_colors[card_iter]
-          )
-      )
-      traces.append(trace)
-      cluster = dict(
-          alphahull = 3,
-          name = card_iter,
-          opacity = 0.05,
-          type = "mesh3d",
-          color = class_colors[card_iter],
-          x = df_filtered['x'], y = df_filtered['y'], z = df_filtered['z']
-      )
-      #if card_iter != 'NEUTRAL': #don't bother with clusters for neutral
-          #traces.append(cluster)
-  empty_axis = dict(zeroline=False, showaxeslabels=False, showticklabels=False, title='')
-  layout = dict(
-      title = '3D Projection of All Wild Cards',
-      margin=dict(
-          l=0,
-          r=0,
-          b=0,
-          t=100
-      ),
-      scene = dict(
-        xaxis = empty_axis,
-        yaxis = empty_axis,
-        zaxis = empty_axis
-      ),
-      legend = dict (
-          orientation = 'h'
-      ),
-      paper_bgcolor='#f7f8fa',
-      plot_bgcolor='#f7f8fa'
-  )
-  fig = go.Figure(data = traces, layout=layout)
-  py.plot(fig)
+  df_plot = df_plot.query('card_set in {}'.format(standard_sets))
+  create_plot(df_plot, 'player_class', class_colors, False)
+  # for card_iter in category.unique():
+  #     df_filtered = df_plot[(category == card_iter)]
+  #     #df_filtered = df_filtered.query('card_set in {}'.format(standard_sets))
+  #     trace = go.Scatter3d(
+  #         type = "scatter3d",
+  #         x = df_filtered['x'],
+  #         y = df_filtered['y'],
+  #         z = df_filtered['z'],
+  #         mode = 'markers',
+  #         name = card_iter,
+  #         text = create_text(df_filtered[['labels', 'card_info']]),
+  #         marker = dict(
+  #             color = class_colors[card_iter]
+  #         )
+  #     )
+  #     traces.append(trace)
+  #     cluster = dict(
+  #         alphahull = 3,
+  #         name = card_iter,
+  #         opacity = 0.05,
+  #         type = "mesh3d",
+  #         color = class_colors[card_iter],
+  #         x = df_filtered['x'], y = df_filtered['y'], z = df_filtered['z']
+  #     )
+  #     #if card_iter != 'NEUTRAL': #don't bother with clusters for neutral
+  #         #traces.append(cluster)
+  # empty_axis = dict(zeroline=False, showaxeslabels=False, showticklabels=False, title='')
+  # layout = dict(
+  #     title = '3D Projection of All Wild Cards',
+  #     margin=dict(
+  #         l=0,
+  #         r=0,
+  #         b=0,
+  #         t=100
+  #     ),
+  #     scene = dict(
+  #       xaxis = empty_axis,
+  #       yaxis = empty_axis,
+  #       zaxis = empty_axis
+  #     ),
+  #     legend = dict (
+  #         orientation = 'h'
+  #     ),
+  #     paper_bgcolor='#f7f8fa',
+  #     plot_bgcolor='#f7f8fa'
+  # )
+  # fig = go.Figure(data = traces, layout=layout)
+  # py.plot(fig)
 #+END_SRC
 
 #+RESULTS:
-: 'https://plot.ly/~sekki/91'
 
