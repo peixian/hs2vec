@@ -1,4 +1,5 @@
 - [Maps Hearthstone cards to vectors for easy comparison](#sec-1)
+    - [Demo - <https://peixian.github.io/hs2vec/>](#sec-1-0-1)
 - [Installation:](#sec-2)
   - [References:](#sec-2-1)
     - [[word2vec](https://radimrehurek.com/gensim/models/word2vec.html)](#sec-2-1-1)
@@ -7,9 +8,11 @@
     - [[mtgencode](https://github.com/billzorn/mtgencode)](#sec-2-1-4)
     - [[CardCrunch](https://github.com/PAK90/cardcrunch)](#sec-2-1-5)
 
-# Maps Hearthstone cards to vectors for easy comparison<a id="orgheadline1"></a>
+# Maps Hearthstone cards to vectors for easy comparison<a id="orgheadline2"></a>
 
-# Installation:<a id="orgheadline8"></a>
+### Demo - <https://peixian.github.io/hs2vec/><a id="orgheadline1"></a>
+
+# Installation:<a id="orgheadline9"></a>
 
 If you have the usual tools of the trade for ml (pandas, numpy, etc), this'll be easy. Otherwise strap in.
 
@@ -34,14 +37,14 @@ pip install -r requirements.txt
 
 1.  Open emacs, switch to the virtualenv you just made in emacs, and you *should* be able to run the org-babel file. Feel free to open a github issue if it doesn't work.
 
-## References:<a id="orgheadline7"></a>
+## References:<a id="orgheadline8"></a>
 
-### [word2vec](https://radimrehurek.com/gensim/models/word2vec.html)<a id="orgheadline2"></a>
+### [word2vec](https://radimrehurek.com/gensim/models/word2vec.html)<a id="orgheadline3"></a>
 
-### [web patterns](http://www.clips.ua.ac.be/pages/pattern-web)<a id="orgheadline3"></a>
+### [web patterns](http://www.clips.ua.ac.be/pages/pattern-web)<a id="orgheadline4"></a>
 
-### [word2map](https://github.com/overlap-ai/words2map)<a id="orgheadline4"></a>
+### [word2map](https://github.com/overlap-ai/words2map)<a id="orgheadline5"></a>
 
-### [mtgencode](https://github.com/billzorn/mtgencode)<a id="orgheadline5"></a>
+### [mtgencode](https://github.com/billzorn/mtgencode)<a id="orgheadline6"></a>
 
-### [CardCrunch](https://github.com/PAK90/cardcrunch)<a id="orgheadline6"></a>
+### [CardCrunch](https://github.com/PAK90/cardcrunch)<a id="orgheadline7"></a>
