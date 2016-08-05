@@ -1,15 +1,19 @@
-- [Hey! If you're reading this on Github, you should download this file instead. Github doesn't display org-babel files very well.](#sec-1)
+- [hs2vec](#sec-1)
     - [Setup](#sec-1-0-1)
     - [Normalize the cost, attack, and health](#sec-1-0-2)
     - [Coerce the mechanics into binary features with one hot encoding](#sec-1-0-3)
     - [Binarize and encode the playerClass](#sec-1-0-4)
     - [Binarize and encode the rarity](#sec-1-0-5)
     - [Binarize and encode the play requirements](#sec-1-0-6)
-    - [Join the dataframes together](#sec-1-0-7)
-    - [Pass into TSNE](#sec-1-0-8)
-    - [Create plotly graph](#sec-1-0-9)
+    - [Binarize and encode the type](#sec-1-0-7)
+    - [Finds and binarizes all the 'deal(s) x damage' cards, along with the heal cards](#sec-1-0-8)
+    - [Join the dataframes together](#sec-1-0-9)
+    - [Concatenate the vector lists](#sec-1-0-10)
+    - [Pass into PCA to reduce the dimensions down to 50](#sec-1-0-11)
+    - [Pass into TSNE](#sec-1-0-12)
+    - [Create plotly graph](#sec-1-0-13)
 
-# Hey! If you're reading this on Github, you should download this file instead. Github doesn't display org-babel files very well.<a id="orgheadline10"></a>
+# hs2vec<a id="orgheadline14"></a>
 
 by Peixian Wang - 2016/8/3
 
@@ -46,7 +50,7 @@ print(df.columns)
     
                                         playRequirements playerClass    race  \
     0                                                NaN      SHAMAN     NaN   
-    1  {'REQ_MINION_OR_ENEMY_HERO': 0, 'REQ_STEADY_SH...      HUNTER     NaN   
+    1  {'REQ_STEADY_SHOT': 0, 'REQ_MINION_OR_ENEMY_HE...      HUNTER     NaN   
     2                                                NaN     NEUTRAL  DRAGON   
     
       rarity         set spellDamage targetingArrowText  \
@@ -246,13 +250,89 @@ df_play_requirements['play_requirements_binarized'] = binarized.tolist()
 print(mlbin.classes_)
 ```
 
-### Join the dataframes together<a id="orgheadline7"></a>
+    ['NONE' 'REQ_DAMAGED_TARGET_0' 'REQ_ENEMY_TARGET_0'
+     'REQ_FRIENDLY_MINION_DIED_THIS_GAME_0' 'REQ_FRIENDLY_TARGET_0'
+     'REQ_FROZEN_TARGET_0' 'REQ_HERO_TARGET_0' 'REQ_LEGENDARY_TARGET_0'
+     'REQ_MINIMUM_ENEMY_MINIONS_1' 'REQ_MINIMUM_ENEMY_MINIONS_2'
+     'REQ_MINIMUM_TOTAL_MINIONS_1' 'REQ_MINIMUM_TOTAL_MINIONS_2'
+     'REQ_MINION_TARGET_0' 'REQ_MUST_TARGET_TAUNTER_0' 'REQ_NONSELF_TARGET_0'
+     'REQ_NUM_MINION_SLOTS_1' 'REQ_TARGET_FOR_COMBO_0'
+     'REQ_TARGET_IF_AVAILABLE_0' 'REQ_TARGET_IF_AVAILABLE_AND_DRAGON_IN_HAND_0'
+     'REQ_TARGET_IF_AVAILABLE_AND_MINIMUM_FRIENDLY_MINIONS_4'
+     'REQ_TARGET_MAX_ATTACK_2' 'REQ_TARGET_MAX_ATTACK_3'
+     'REQ_TARGET_MIN_ATTACK_5' 'REQ_TARGET_MIN_ATTACK_7' 'REQ_TARGET_TO_PLAY_0'
+     'REQ_TARGET_WITH_DEATHRATTLE_0' 'REQ_TARGET_WITH_RACE_14'
+     'REQ_TARGET_WITH_RACE_15' 'REQ_TARGET_WITH_RACE_17'
+     'REQ_TARGET_WITH_RACE_20' 'REQ_UNDAMAGED_TARGET_0' 'REQ_WEAPON_EQUIPPED_0']
+
+### Binarize and encode the type<a id="orgheadline7"></a>
+
+```ipython
+df_type = df[['id', 'type']]
+mlbin = LabelBinarizer()
+binarized = mlbin.fit_transform(df_type['type'])
+df_type['type_binarized'] = binarized.tolist()
+print(mlbin.classes_)
+```
+
+    ['MINION' 'SPELL' 'WEAPON']
+
+### Finds and binarizes all the 'deal(s) x damage' cards, along with the heal cards<a id="orgheadline8"></a>
+
+All targeted damage cards are denoted with a $, healing is denoted with a #
+The exceptions to this are random targets a (Eyedis Darkbane) and no targets (Darkiron Skulker)
+
+```ipython
+import re
+df_damage = df[['id', 'text']]
+damage_text = re.compile(r'.*eal(s)* \$*[0-9]* .amage', re.DOTALL)
+health_text = re.compile(r'.*estore(s)*\s*\#*[0-9]\s*.ealth', re.DOTALL)
+damage_binarized = []
+for i, row in df_damage.iterrows():
+    #create a binarized vector with keys [damage, health]
+    val = [0, 0]
+    if damage_text.match(str(row['text'])):
+        val[0] = 1
+    if health_text.match(str(row['text'])):
+        val[1] = 1
+    damage_binarized.append(val)
+df_damage['damage_binarized'] = damage_binarized
+print(df_damage.head(10))
+```
+
+             id                                               text  \
+    3    OG_121  <b>Battlecry:</b> The next spell you cast this...   
+    6    OG_085  After you cast a spell, <b>Freeze</b> a random...   
+    10   AT_076            <b>Inspire:</b> Summon a random Murloc.   
+    15  CS2_124                                      <b>Charge</b>   
+    17  GVG_079                               <b>Divine Shield</b>   
+    18  BRM_011  Deal $2 damage.\nUnlock your <b>Overloaded</b>...   
+    19  CS2_122                 Your other minions have +1 Attack.   
+    23  EX1_339  Copy 2 cards from your opponent's deck and put...   
+    24  GVG_007  When you draw this, deal 2 damage to all chara...   
+    25  GVG_086  Whenever you gain Armor, give this minion +1 A...   
+    
+       damage_binarized  
+    3            [0, 0]  
+    6            [0, 0]  
+    10           [0, 0]  
+    15           [0, 0]  
+    17           [0, 0]  
+    18           [1, 0]  
+    19           [0, 0]  
+    23           [0, 0]  
+    24           [1, 0]  
+    25           [0, 0]
+
+### Join the dataframes together<a id="orgheadline9"></a>
 
 ```ipython
 df_combined = df_n_stats.merge(df_mechanics, on='id')
 df_combined = df_combined.merge(df_player_class, on='id')
 df_combined = df_combined.merge(df_rarity, on='id')
 df_combined = df_combined.merge(df_play_requirements, on='id')
+df_combined = df_combined.merge(df_type, on='id')
+df_combined = df_combined.merge(df_damage, on='id')
 print(df_combined.head(5))
 ```
 
@@ -298,12 +378,26 @@ print(df_combined.head(5))
     3  [0, 0, 1, 0, 0]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...   
     4  [1, 0, 0, 0, 0]    (0, 8)\t1.0\n  (0, 7)\t1.0\n  (0, 4)\t1.0\n ...   
     
-      playRequirements                        play_requirements_binarized  
-    0           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...  
-    1           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...  
-    2           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...  
-    3           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...  
-    4           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...
+      playRequirements                        play_requirements_binarized    type  \
+    0           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...  MINION   
+    1           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...  MINION   
+    2           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...  MINION   
+    3           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...  MINION   
+    4           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...  MINION   
+    
+      type_binarized                                               text  \
+    0      [1, 0, 0]  <b>Battlecry:</b> The next spell you cast this...   
+    1      [1, 0, 0]  After you cast a spell, <b>Freeze</b> a random...   
+    2      [1, 0, 0]            <b>Inspire:</b> Summon a random Murloc.   
+    3      [1, 0, 0]                                      <b>Charge</b>   
+    4      [1, 0, 0]                               <b>Divine Shield</b>   
+    
+      damage_binarized  
+    0           [0, 0]  
+    1           [0, 0]  
+    2           [0, 0]  
+    3           [0, 0]  
+    4           [0, 0]
 
 convert the sparse matricies into csc format
 
@@ -330,20 +424,25 @@ print(df_combined.dtypes)
     rarity_sparse                   object
     playRequirements                object
     play_requirements_binarized     object
+    type                            object
+    type_binarized                  object
+    text                            object
+    damage_binarized                object
     dtype: object
 
-### Pass into TSNE<a id="orgheadline8"></a>
+### Concatenate the vector lists<a id="orgheadline10"></a>
 
 ```ipython
 from sklearn.decomposition import PCA
 from scipy.sparse import hstack
-df_combined['features'] = df_combined[['attack', 'cost', 'health']].values.tolist()
+n_stats = ['attack', 'health']
+header_list = list(df_combined.columns.values)
+iter_headers = [header for header in header_list if 'binarized' in header]
+df_combined['features'] = df_combined[n_stats].values.tolist()
 for i, row in df_combined.iterrows():
     val = row['features']
-    val.extend(row['mechanics_binarized'])
-    val.extend(row['player_class_binarized'])
-    val.extend(row['rarity_binarized'])
-    val.extend(row['play_requirements_binarized'])
+    for header in iter_headers:
+        val.extend(row[header])
     df_combined.set_value(i, 'features', val)
 print(df_combined.head(5))
 print(len(df_combined['features'][0]))
@@ -391,38 +490,99 @@ print(len(df_combined['features'][0]))
     3  [0, 0, 1, 0, 0]    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (3, 0)\t1.0\n ...   
     4  [1, 0, 0, 0, 0]    (0, 0)\t1.0\n  (1, 0)\t1.0\n  (3, 0)\t1.0\n ...   
     
-      playRequirements                        play_requirements_binarized  \
-    0           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...   
-    1           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...   
-    2           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...   
-    3           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...   
-    4           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...   
+      playRequirements                        play_requirements_binarized    type  \
+    0           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...  MINION   
+    1           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...  MINION   
+    2           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...  MINION   
+    3           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...  MINION   
+    4           [NONE]  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...  MINION   
     
-                                                features  
-    0  [0.5833333333333333, 0.28, 0.4666666666666667,...  
-    1  [0.16666666666666666, 0.16, 0.2666666666666666...  
-    2  [0.25, 0.16, 0.26666666666666666, 0, 0, 0, 0, ...  
-    3  [0.25, 0.12, 0.06666666666666667, 0, 0, 0, 0, ...  
-    4  [0.5833333333333333, 0.32, 0.4666666666666667,...  
-    78
+      type_binarized                                               text  \
+    0      [1, 0, 0]  <b>Battlecry:</b> The next spell you cast this...   
+    1      [1, 0, 0]  After you cast a spell, <b>Freeze</b> a random...   
+    2      [1, 0, 0]            <b>Inspire:</b> Summon a random Murloc.   
+    3      [1, 0, 0]                                      <b>Charge</b>   
+    4      [1, 0, 0]                               <b>Divine Shield</b>   
+    
+      damage_binarized                                           features  
+    0           [0, 0]  [0.5833333333333333, 0.4666666666666667, 0, 0,...  
+    1           [0, 0]  [0.16666666666666666, 0.26666666666666666, 0, ...  
+    2           [0, 0]  [0.25, 0.26666666666666666, 0, 0, 0, 0, 0, 0, ...  
+    3           [0, 0]  [0.25, 0.06666666666666667, 0, 0, 0, 0, 0, 0, ...  
+    4           [0, 0]  [0.5833333333333333, 0.4666666666666667, 0, 0,...  
+    82
+
+### Pass into PCA to reduce the dimensions down to 50<a id="orgheadline11"></a>
+
+```ipython
+from sklearn.decomposition import PCA
+pca = PCA(n_components = 50)
+pca_features = pca.fit_transform(df_combined['features'].tolist())
+df_combined['pca_features'] = pca_features.tolist()
+print(df_combined['pca_features'].head(5))
+print(pca.explained_variance_ratio_)
+```
+
+    0    [-0.7546125898341142, 0.3109435899222342, -0.4...
+    1    [-0.020847952649766004, 0.9224738688260612, 0....
+    2    [-0.33925705957152824, -0.547709108625113, 0.3...
+    3    [-0.6831570258323537, 0.13081263174728183, 0.1...
+    4    [-0.8229260946759818, -0.6830626665540008, 0.3...
+    Name: pca_features, dtype: object
+    [ 0.22545168  0.09439072  0.08411502  0.06144576  0.04989462  0.03873717
+      0.03684653  0.03323254  0.03002102  0.02111748  0.02097391  0.01995929
+      0.01951327  0.01898548  0.01860501  0.01824986  0.01795614  0.01723633
+      0.01509929  0.01479114  0.01316465  0.01135129  0.0097778   0.00799817
+      0.0072036   0.0062829   0.00605377  0.00600344  0.00498473  0.00491853
+      0.00455807  0.00421019  0.00393334  0.00380949  0.00369876  0.00353471
+      0.00335253  0.00308618  0.00276883  0.00269349  0.00267812  0.00246453
+      0.00232219  0.00181396  0.00159759  0.00136127  0.00122954  0.00113886
+      0.00103312  0.00102281]
+
+### Pass into TSNE<a id="orgheadline12"></a>
 
 ```ipython
 from sklearn.manifold import TSNE
-#tnse_model = TSNE(n_components=dimensions, n_iter=10000000, metric="correlation", learning_rate=50, early_exaggeration=500.0, perplexity=40.0)
-tnse_model = TSNE(n_components = 3)
+dimensions = 3
+tnse_model = TSNE(n_components=dimensions, n_iter=10000000, metric="correlation", learning_rate=50, early_exaggeration=500.0, perplexity=40.0)
+#tnse_model = TSNE(n_components = 3)
 np.set_printoptions(suppress=True)
-model = tnse_model.fit_transform(df_combined['features'].tolist())
+model = tnse_model.fit_transform(df_combined['pca_features'].tolist())
 ```
 
 ```ipython
 df_plot = pd.DataFrame(model)
 df_plot.columns = ['x', 'y', 'z']
 df_plot['labels'] = list(map(lambda x: df[df['id'] == x]['name'].values[0], df_combined['id']))
-df_plot['rarity'] = list(map(lambda x: df[df['id'] == x]['rarity'].values[0], df_combined['id']))
-df_plot['cost'] = list(map(lambda x: df[df['id'] == x]['cost'].values[0], df_combined['id']))
+df_plot['rarity'] = df_combined['rarity']
+df_plot['cost'] = df_combined['cost']
 df_plot['player_class'] = df_combined['playerClass']
+df_plot['type'] = df_combined['type']
+df_plot['card_info'] = list(map(lambda x: df[df['id']==x]['text'].values[0], df_combined['id']))
+df_plot['card_set'] = list(map(lambda x: df[df['id'] == x]['set'].values[0], df_combined['id']))
 print(df_plot.head(5))
 ```
+
+              x         y         z                labels     rarity  cost  \
+    0 -0.123585 -0.459441  3.358811              Cho'gall  LEGENDARY  0.28   
+    1  0.848554  3.792087 -0.149075  Demented Frostcaller       RARE  0.16   
+    2  1.505656 -2.137281 -0.346206         Murloc Knight     COMMON  0.16   
+    3 -2.125034  0.070122  1.723763             Wolfrider       FREE  0.12   
+    4  1.758465 -3.127030 -1.418428        Force-Tank MAX     COMMON  0.32   
+    
+      player_class    type                                          card_info  \
+    0      WARLOCK  MINION  <b>Battlecry:</b> The next spell you cast this...   
+    1         MAGE  MINION  After you cast a spell, <b>Freeze</b> a random...   
+    2      PALADIN  MINION            <b>Inspire:</b> Summon a random Murloc.   
+    3      NEUTRAL  MINION                                      <b>Charge</b>   
+    4      NEUTRAL  MINION                               <b>Divine Shield</b>   
+    
+      card_set  
+    0       OG  
+    1       OG  
+    2      TGT  
+    3     CORE  
+    4      GVG
 
 Write to csv
 
@@ -430,28 +590,42 @@ Write to csv
 df_plot.to_csv('../results/model.tsv', sep='\t')
 ```
 
-### Create plotly graph<a id="orgheadline9"></a>
+```ipython
+print(df_plot.dtypes)
+```
+
+    x               float64
+    y               float64
+    z               float64
+    labels           object
+    rarity           object
+    cost            float64
+    player_class     object
+    type             object
+    card_info        object
+    card_set         object
+    dtype: object
+
+### Create plotly graph<a id="orgheadline13"></a>
 
 ```ipython
 import plotly.plotly as py
 import plotly.graph_objs as go
 
+
+def create_text(df):
+    convert = lambda x: '{}:<br>{}'.format(x[0], x[1])
+    return df.apply(convert, axis=1)
+
 rarity_colors = {'LEGENDARY': '#F535A5', 'RARE': '#3993F9', 'EPIC': '#CC47D5', 'COMMON': '#F3F9F1', 'FREE': '#263238' }
-class_colors = {'WARRIOR': '#8D0F01',
-                'SHAMAN': '#011784',
-                'ROGUE': '#4B4C47',
-                'PALADIN': '#A98E00',
-                'HUNTER': '#006E00',
-                'DRUID': '#703505',
-                'WARLOCK': '#7623AD',
-                'MAGE': '#0091AB',
-                'PRIEST': '#C7C19E', 
-                'NEUTRAL': '#263238'} #colors from: https://www.reddit.com/r/hearthstone/comments/2d0x31/mtg_has_the_color_pie_here_is_a_hearthstone_color/
+class_colors = {'WARRIOR': '#8D0F01', 'SHAMAN': '#011784', 'ROGUE': '#4B4C47', 'PALADIN': '#A98E00', 'HUNTER': '#006E00', 'DRUID': '#703505', 'WARLOCK': '#7623AD', 'MAGE': '#0091AB', 'PRIEST': '#C7C19E', 'NEUTRAL': '#263238'} #colors from: https://www.reddit.com/r/hearthstone/comments/2d0x31/mtg_has_the_color_pie_here_is_a_hearthstone_color/
+standard_sets = ('OG', 'TGT', 'CORE', 'BRM', 'LOE')
 traces = []
 clusters = []
 category = df_plot['player_class']
 for card_iter in category.unique():
-    df_filtered = df_plot[category == card_iter]
+    df_filtered = df_plot[(category == card_iter)]
+    df_filtered = df_filtered.query('card_set in {}'.format(standard_sets))
     trace = go.Scatter3d(
         type = "scatter3d",
         x = df_filtered['x'],
@@ -459,7 +633,7 @@ for card_iter in category.unique():
         z = df_filtered['z'],
         mode = 'markers',
         name = card_iter,
-        text = df_filtered['labels'],
+        text = create_text(df_filtered[['labels', 'card_info']]),
         marker = dict(
             color = class_colors[card_iter]
         )
@@ -473,8 +647,8 @@ for card_iter in category.unique():
         color = class_colors[card_iter],
         x = df_filtered['x'], y = df_filtered['y'], z = df_filtered['z']
     )
-    if card_iter != 'NEUTRAL': #don't bother with clusters for neutral
-        traces.append(cluster)
+    #if card_iter != 'NEUTRAL': #don't bother with clusters for neutral
+        #traces.append(cluster)
 empty_axis = dict(zeroline=False, showaxeslabels=False, showticklabels=False, title='')
 layout = go.Layout(
     margin=dict(
@@ -487,13 +661,15 @@ layout = go.Layout(
       xaxis = empty_axis,
       yaxis = empty_axis,
       zaxis = empty_axis
-  ),
-  paper_bgcolor='#f7f8fa',
-  plot_bgcolor='#f7f8fa'
+    ),
+    legend = dict (
+        orientation = 'h'
+    ),
+    paper_bgcolor='#f7f8fa',
+    plot_bgcolor='#f7f8fa'
 )
-#print(clusters[:2])
 fig = go.Figure(data = traces, layout=layout)
 py.plot(fig)
 ```
 
-    'https://plot.ly/~sekki/47'
+    'https://plot.ly/~sekki/71'
