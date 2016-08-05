@@ -17,7 +17,7 @@
 
 by Peixian Wang - 2016/8/3
 
-*This is licensed under MIT, so do what you want with it, modify it, fork it, etc. If you use this code I'd apprechiate an attribution back :>*
+*This is licensed under MIT, so do what you want with it, modify it, fork it, etc. If you use this code I'd appreciate an attribution back :>*
 
 **MAKE SURE YOU'RE IN THE RIGHT VIRTUALENV**
 
@@ -26,8 +26,6 @@ by Peixian Wang - 2016/8/3
 Import the supporting cast
 
 ```ipython
-import collectobot
-import yaha_analyzer
 import pandas as pd
 import numpy as np
 ```
@@ -50,7 +48,7 @@ print(df.columns)
     
                                         playRequirements playerClass    race  \
     0                                                NaN      SHAMAN     NaN   
-    1  {'REQ_STEADY_SHOT': 0, 'REQ_MINION_OR_ENEMY_HE...      HUNTER     NaN   
+    1  {'REQ_MINION_OR_ENEMY_HERO': 0, 'REQ_STEADY_SH...      HUNTER     NaN   
     2                                                NaN     NEUTRAL  DRAGON   
     
       rarity         set spellDamage targetingArrowText  \
@@ -564,11 +562,11 @@ print(df_plot.head(5))
 ```
 
               x         y         z                labels     rarity  cost  \
-    0 -0.123585 -0.459441  3.358811              Cho'gall  LEGENDARY  0.28   
-    1  0.848554  3.792087 -0.149075  Demented Frostcaller       RARE  0.16   
-    2  1.505656 -2.137281 -0.346206         Murloc Knight     COMMON  0.16   
-    3 -2.125034  0.070122  1.723763             Wolfrider       FREE  0.12   
-    4  1.758465 -3.127030 -1.418428        Force-Tank MAX     COMMON  0.32   
+    0  2.342262 -0.101746 -1.961431              Cho'gall  LEGENDARY  0.28   
+    1  2.780964 -1.692352  0.758270  Demented Frostcaller       RARE  0.16   
+    2 -1.362544 -2.352792 -0.437803         Murloc Knight     COMMON  0.16   
+    3 -0.175904 -1.200762 -3.346595             Wolfrider       FREE  0.12   
+    4 -0.998853 -3.139931 -2.670621        Force-Tank MAX     COMMON  0.32   
     
       player_class    type                                          card_info  \
     0      WARLOCK  MINION  <b>Battlecry:</b> The next spell you cast this...   
@@ -584,10 +582,16 @@ print(df_plot.head(5))
     3     CORE  
     4      GVG
 
-Write to csv
+Write out plot to a csv file
 
 ```ipython
-df_plot.to_csv('../results/model.tsv', sep='\t')
+df_plot.to_csv('../results/model.csv')
+```
+
+Write out the features array to a csv file
+
+```ipython
+df_combined.to_csv('../results/features.csv')
 ```
 
 ```ipython
@@ -611,8 +615,7 @@ print(df_plot.dtypes)
 ```ipython
 import plotly.plotly as py
 import plotly.graph_objs as go
-
-
+import pandas as pd
 def create_text(df):
     convert = lambda x: '{}:<br>{}'.format(x[0], x[1])
     return df.apply(convert, axis=1)
@@ -622,10 +625,11 @@ class_colors = {'WARRIOR': '#8D0F01', 'SHAMAN': '#011784', 'ROGUE': '#4B4C47', '
 standard_sets = ('OG', 'TGT', 'CORE', 'BRM', 'LOE')
 traces = []
 clusters = []
+df_plot = pd.read_csv('../results/model.csv')
 category = df_plot['player_class']
 for card_iter in category.unique():
     df_filtered = df_plot[(category == card_iter)]
-    df_filtered = df_filtered.query('card_set in {}'.format(standard_sets))
+    #df_filtered = df_filtered.query('card_set in {}'.format(standard_sets))
     trace = go.Scatter3d(
         type = "scatter3d",
         x = df_filtered['x'],
@@ -642,7 +646,7 @@ for card_iter in category.unique():
     cluster = dict(
         alphahull = 3,
         name = card_iter,
-        opacity = 0.1,
+        opacity = 0.05,
         type = "mesh3d",
         color = class_colors[card_iter],
         x = df_filtered['x'], y = df_filtered['y'], z = df_filtered['z']
@@ -650,12 +654,13 @@ for card_iter in category.unique():
     #if card_iter != 'NEUTRAL': #don't bother with clusters for neutral
         #traces.append(cluster)
 empty_axis = dict(zeroline=False, showaxeslabels=False, showticklabels=False, title='')
-layout = go.Layout(
+layout = dict(
+    title = '3D Projection of All Wild Cards',
     margin=dict(
         l=0,
         r=0,
         b=0,
-        t=0
+        t=100
     ),
     scene = dict(
       xaxis = empty_axis,
@@ -672,4 +677,4 @@ fig = go.Figure(data = traces, layout=layout)
 py.plot(fig)
 ```
 
-    'https://plot.ly/~sekki/71'
+    'https://plot.ly/~sekki/95'

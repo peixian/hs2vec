@@ -1,14 +1,12 @@
 * hs2vec
 by Peixian Wang - 2016/8/3
 
-/This is licensed under MIT, so do what you want with it, modify it, fork it, etc. If you use this code I'd apprechiate an attribution back :>/
+/This is licensed under MIT, so do what you want with it, modify it, fork it, etc. If you use this code I'd appreciate an attribution back :>/
 
 *MAKE SURE YOU'RE IN THE RIGHT VIRTUALENV*
 *** Setup
 Import the supporting cast
 #+BEGIN_SRC ipython :session 
-  import collectobot
-  import yaha_analyzer
   import pandas as pd
   import numpy as np
 #+END_SRC
